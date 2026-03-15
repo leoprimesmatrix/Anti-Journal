@@ -190,18 +190,18 @@ const C = (opts: any) => confetti({ origin: { y: 0.5 }, zIndex: 1000, ...opts })
 const anims: Record<string, ProfileConfig> = {
   shatter: { p: () => { C({ particleCount: 200, spread: 120, colors: ['#fff', '#d8b4fe'], startVelocity: 70, gravity: 1.2 }); C({ particleCount: 50, spread: 180, colors: ['#e4e4e7'], startVelocity: 90, shapes: ['square'] }); }, pD: 200, rD: 1200, f: 'bg-purple-200', s: [{d:0.2, dur:0.8, c:'border-white'}] },
   implode: { p: () => setTimeout(() => C({ particleCount: 300, spread: 360, colors: ['#18181b', '#581c87', '#000'], startVelocity: 50, gravity: 0.1, ticks: 400 }), 500), pD: 0, rD: 1500 },
-  ascend: { p: () => { const e = Date.now()+1500; const f = () => { C({ particleCount: 5, angle: 90, spread: 90, origin: {y:0.6}, colors: ['#f3e8ff', '#d8b4fe'], startVelocity: 25, gravity: -0.3 }); if(Date.now()<e) requestAnimationFrame(f); }; f(); }, pD: 100, rD: 1800 },
+  ascend: { p: () => { const e = Date.now()+1500; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 5, angle: 90, spread: 90, origin: {y:0.6}, colors: ['#f3e8ff', '#d8b4fe'], startVelocity: 25, gravity: -0.3 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1800 },
   supernova: { p: () => C({ particleCount: 400, spread: 360, colors: ['#fff', '#e9d5ff'], startVelocity: 100, gravity: 0.5, scalar: 1.2 }), pD: 400, rD: 1200, f: 'bg-white', s: [{d:0.4, dur:1.2, c:'border-purple-300'}] },
   pulse: { p: () => { C({ particleCount: 150, spread: 360, colors: ['#60a5fa', '#fff'], startVelocity: 60 }); setTimeout(() => C({ particleCount: 150, spread: 360, colors: ['#c084fc'], startVelocity: 80 }), 200); }, pD: 100, rD: 1200, s: [{d:0, dur:1, c:'border-blue-400'}, {d:0.2, dur:1, c:'border-purple-400'}, {d:0.4, dur:1, c:'border-white'}] },
   dissolve: { p: () => C({ particleCount: 200, spread: 360, colors: ['#a1a1aa', '#71717a'], startVelocity: 30, gravity: 0.2, drift: 0.5, ticks: 300 }), pD: 200, rD: 1600 },
-  evaporate: { p: () => { const e = Date.now()+1000; const f = () => { C({ particleCount: 8, angle: 90, spread: 45, colors: ['#e0e7ff', '#c7d2fe'], startVelocity: 40, gravity: -0.5 }); if(Date.now()<e) requestAnimationFrame(f); }; f(); }, pD: 100, rD: 1500 },
+  evaporate: { p: () => { const e = Date.now()+1000; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 8, angle: 90, spread: 45, colors: ['#e0e7ff', '#c7d2fe'], startVelocity: 40, gravity: -0.5 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1500 },
   fallaway: { p: () => C({ particleCount: 150, angle: 270, spread: 60, colors: ['#3f3f46', '#27272a'], startVelocity: 60, gravity: 1.5 }), pD: 100, rD: 1000 },
   breeze: { p: () => C({ particleCount: 200, angle: 0, spread: 45, colors: ['#f3f4f6', '#d1d5db'], startVelocity: 80, gravity: 0.1, drift: 1, ticks: 300 }), pD: 200, rD: 1400 },
   burn: { p: () => { C({ particleCount: 250, spread: 360, colors: ['#f9a8d4', '#f472b6', '#fb7185'], startVelocity: 50, gravity: -0.1 }); C({ particleCount: 100, spread: 360, colors: ['#18181b'], startVelocity: 30, gravity: 0.5 }); }, pD: 300, rD: 1300, f: 'bg-pink-200', s: [{d:0.3, dur:0.8, c:'border-pink-400'}] },
   fracture: { p: () => C({ particleCount: 150, spread: 180, colors: ['#fff', '#a855f7'], startVelocity: 90, gravity: 1.5, shapes: ['square'], scalar: 0.8 }), pD: 100, rD: 1000, s: [{d:0.1, dur:0.5, c:'border-white'}] },
   float: { p: () => C({ particleCount: 100, spread: 360, colors: ['#ddd6fe', '#c4b5fd'], startVelocity: 20, gravity: 0, drift: 0.2, ticks: 500 }), pD: 200, rD: 2200 },
   echo: { p: () => { [0, 300, 600].forEach(d => setTimeout(() => C({ particleCount: 50, spread: 360, colors: ['#a78bfa'], startVelocity: 40, gravity: 0.2 }), d)); }, pD: 0, rD: 1800, s: [{d:0, dur:1, c:'border-purple-300'}, {d:0.3, dur:1, c:'border-purple-400'}, {d:0.6, dur:1, c:'border-purple-500'}] },
-  cleanse: { p: () => { const e = Date.now()+800; const f = () => { C({ particleCount: 15, angle: 270, spread: 90, colors: ['#93c5fd', '#60a5fa', '#3b82f6'], startVelocity: 50, gravity: 1.2 }); if(Date.now()<e) requestAnimationFrame(f); }; f(); }, pD: 100, rD: 1400, f: 'bg-blue-100' },
+  cleanse: { p: () => { const e = Date.now()+800; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 15, angle: 270, spread: 90, colors: ['#93c5fd', '#60a5fa', '#3b82f6'], startVelocity: 50, gravity: 1.2 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1400, f: 'bg-blue-100' },
   warp: { p: () => { C({ particleCount: 100, spread: 20, angle: 0, colors: ['#c084fc'], startVelocity: 120, gravity: 0 }); C({ particleCount: 100, spread: 20, angle: 180, colors: ['#c084fc'], startVelocity: 120, gravity: 0 }); }, pD: 200, rD: 1000, s: [{d:0.2, dur:0.6, c:'border-fuchsia-400'}] },
   ripple: { p: () => C({ particleCount: 100, spread: 360, colors: ['#bfdbfe', '#e0e7ff'], startVelocity: 30, gravity: 0.1, ticks: 300 }), pD: 200, rD: 1500, s: [{d:0.2, dur:1.5, c:'border-blue-200'}] },
   shred: { p: () => C({ particleCount: 150, angle: 270, spread: 20, colors: ['#d4d4d8', '#a1a1aa'], startVelocity: 100, gravity: 2, shapes: ['square'] }), pD: 100, rD: 900 },
@@ -210,13 +210,17 @@ const anims: Record<string, ProfileConfig> = {
   glitch: { p: () => { C({ particleCount: 100, spread: 180, colors: ['#ef4444', '#3b82f6', '#22c55e'], startVelocity: 80, gravity: 1, shapes: ['square'] }); setTimeout(() => C({ particleCount: 100, spread: 180, colors: ['#fff'], startVelocity: 100, gravity: 1 }), 100); }, pD: 0, rD: 800 },
   blackhole: { p: () => { 
     const e = Date.now() + 2500;
-    const f = () => {
-      C({ particleCount: 15, spread: 360, origin: { x: 0.5, y: 0.5 }, colors: ['#000', '#4c1d95', '#1e40af'], startVelocity: -40, gravity: 0, scalar: 0.7 });
+    let last = 0;
+    const f = (now: number) => {
+      if(now - last > 50) {
+        C({ particleCount: 15, spread: 360, origin: { x: 0.5, y: 0.5 }, colors: ['#000', '#4c1d95', '#1e40af'], startVelocity: -40, gravity: 0, scalar: 0.7 });
+        last = now;
+      }
       if (Date.now() < e) requestAnimationFrame(f);
     };
-    f();
+    requestAnimationFrame(f);
   }, pD: 0, rD: 3500 },
-  ascendLight: { p: () => { const e = Date.now()+1200; const f = () => { C({ particleCount: 10, angle: 90, spread: 45, origin: {y: 0.8}, colors: ['#fff', '#fef08a', '#fde047'], startVelocity: 60, gravity: -0.2 }); if(Date.now()<e) requestAnimationFrame(f); }; f(); }, pD: 100, rD: 1600, f: 'bg-yellow-100' },
+  ascendLight: { p: () => { const e = Date.now()+1200; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 10, angle: 90, spread: 45, origin: {y: 0.8}, colors: ['#fff', '#fef08a', '#fde047'], startVelocity: 60, gravity: -0.2 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1600, f: 'bg-yellow-100' },
   shatterGlass: { p: () => { C({ particleCount: 300, spread: 360, colors: ['#e0e7ff', '#c7d2fe', '#fff'], startVelocity: 100, gravity: 1.5, shapes: ['square'] }); }, pD: 0, rD: 1000, s: [{d:0, dur:0.5, c:'border-white'}, {d:0.1, dur:0.6, c:'border-blue-200'}] },
   ethereal: { p: () => {}, pD: 0, rD: 2000 },
   oblivion: { p: () => {}, pD: 0, rD: 1500 },
