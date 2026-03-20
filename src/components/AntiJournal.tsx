@@ -47,7 +47,7 @@ const SUBHEADINGS = [
   "The cosmos absorbs your heavy thoughts.",
 ];
 
-type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss';
+type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex';
 
 const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, icon: React.ReactNode }> = {
   // New Premium Themes
@@ -57,6 +57,7 @@ const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: st
   sereneLandscape: { bg: 'bg-[#0a0a0a]', accent: 'stone', text: 'text-stone-100', name: 'Serene Landscape', isPro: true, icon: <Mountain className="w-5 h-5" /> },
   obsidian: { bg: 'bg-[#000000]', accent: 'zinc', text: 'text-zinc-400', name: 'Obsidian', isPro: false, icon: <Diamond className="w-5 h-5" /> },
   nebula: { bg: 'bg-[#05000a]', accent: 'pink', text: 'text-pink-100', name: 'Nebula', isPro: true, icon: <Orbit className="w-5 h-5" /> },
+  nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isPro: true, icon: <Orbit className="w-5 h-5" /> },
   
   // Refined Original Themes (Darker)
   liquidGlass: { bg: 'bg-[#000000]', accent: 'white', text: 'text-white', name: 'Liquid Glass', isPro: true, icon: <Layers className="w-5 h-5" /> },
@@ -93,6 +94,7 @@ interface UserData {
   theme: Theme;
   selectedAnimation?: string;
   isEcoMode?: boolean;
+  disableBreathing?: boolean;
   paypalSubscriptionId?: string;
 }
 
@@ -106,7 +108,8 @@ const defaultUserData: UserData = {
   history: [],
   theme: 'stardust',
   selectedAnimation: 'random',
-  isEcoMode: false
+  isEcoMode: false,
+  disableBreathing: false
 };
 
 const CosmicCanvas = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
@@ -786,6 +789,7 @@ const ThemePreview = ({ theme }: { theme: Theme }) => {
     crimson: ['#450a0a', '#7f1d1d', '#0a0202', '#991b1b'],
     ethereal: ['#0f172a', '#1e293b', '#010208', '#334155'],
     abyss: ['#09090b', '#18181b', '#020202', '#27272a'],
+    nebulaVortex: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
   } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
 
   return (
@@ -893,6 +897,7 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
     crimson: ['#450a0a', '#7f1d1d', '#0a0202', '#991b1b'],
     ethereal: ['#0f172a', '#1e293b', '#010208', '#334155'],
     abyss: ['#09090b', '#18181b', '#020202', '#27272a'],
+    nebulaVortex: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
   } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
 
   const blendMode = '';
@@ -924,6 +929,24 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
             alt="Landscape" 
             className="w-full h-full object-cover opacity-20 grayscale"
             referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+        </div>
+      )}
+
+      {/* Background Video for Nebula Vortex */}
+      {theme === 'nebulaVortex' && (
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-40"
+            onLoadedMetadata={(e) => {
+              e.currentTarget.playbackRate = 0.5;
+            }}
+            src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAADHXAVkMTSS7IfVtOjKAHLWM-xI1rtVS_y1Y8iv8jTX2&exp=1774028400&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdDFUlgMROzVaOYRWjVu91DGQFxQ3foSqble4YmksdlVhRZ0Bj"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
         </div>
@@ -1405,6 +1428,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           theme: data.theme || 'void',
           selectedAnimation: data.selectedAnimation || 'random',
           isEcoMode: data.isEcoMode ?? prev.isEcoMode,
+          disableBreathing: data.disableBreathing ?? prev.disableBreathing,
         }));
         if (data.isEcoMode !== undefined) setIsEcoMode(data.isEcoMode);
       } else {
@@ -1418,6 +1442,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           lastMonthlyUpdate: Date.now(),
           theme: 'void',
           isEcoMode: isEcoMode, // Use the auto-detected value
+          disableBreathing: false,
           email: user.email,
           updatedAt: serverTimestamp()
         };
@@ -1699,6 +1724,12 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
 
     setTimeout(() => {
       setActiveAnims(prev => prev.filter(a => a.id !== animId));
+      
+      if (userData.disableBreathing) {
+        setIsDestroyed(false);
+        return;
+      }
+
       setIsDestroyed(true);
       playBreathingSound();
       
@@ -2481,6 +2512,28 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                             >
                               <motion.div
                                 animate={{ x: isEcoMode ? 26 : 2 }}
+                                className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                              />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-4 p-1 rounded-full bg-white/5 border border-white/5">
+                            <div className="flex flex-col pl-4">
+                              <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Skip Breathing</span>
+                              <span className="text-[8px] text-white/20 uppercase tracking-tighter">Fast Release</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const newVal = !userData.disableBreathing;
+                                saveUserData({ disableBreathing: newVal });
+                              }}
+                              className={cn(
+                                "relative w-12 h-6 rounded-full transition-colors duration-300",
+                                userData.disableBreathing ? "bg-rose-500" : "bg-white/10"
+                              )}
+                            >
+                              <motion.div
+                                animate={{ x: userData.disableBreathing ? 26 : 2 }}
                                 className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
                               />
                             </button>

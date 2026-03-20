@@ -20,6 +20,7 @@ export const THEME_COLORS = {
   crimson: '#ef4444',
   ethereal: '#94a3b8',
   abyss: '#a1a1aa',
+  nebulaVortex: '#818cf8',
   aboveAndBeyond: '#818cf8'
 };
 

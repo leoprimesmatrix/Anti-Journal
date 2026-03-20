@@ -62,6 +62,7 @@ async function startServer() {
     res.json({
       paypalClientId: process.env.PAYPAL_CLIENT_ID || '',
       paypalPlanId: process.env.PAYPAL_PLAN_ID || '',
+      contactEmail: process.env.CONTACT_EMAIL || 'leonardoandresdiaz2606@gmail.com',
     });
   });
 

@@ -10,7 +10,7 @@ import AdminPanel from './components/AdminPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { Clock, ShieldOff, LogOut, Shield } from 'lucide-react';
 import { signOut } from 'firebase/auth';
@@ -29,6 +29,15 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
+
+  const isAdmin = user && adminEmail && user.email === adminEmail;
+
+  useEffect(() => {
+    if (isAdmin && profile && profile.role !== 'admin' && user) {
+      const userRef = doc(db, 'users', user.uid);
+      updateDoc(userRef, { role: 'admin' }).catch(err => console.error('Failed to update admin role:', err));
+    }
+  }, [isAdmin, profile, user]);
 
   useEffect(() => {
     // Fetch admin email from server config
@@ -108,8 +117,6 @@ export default function App() {
       </div>
     );
   }
-
-  const isAdmin = user && adminEmail && user.email === adminEmail;
 
   // Admin View
   if (isAdmin && showAdmin) {
