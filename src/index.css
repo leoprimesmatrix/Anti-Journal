@@ -53,6 +53,15 @@ body {
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.eco-mode .liquid-glass,
+.eco-mode .liquid-glass-strong {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.08);
 }
 .liquid-glass::before {
   content: '';
@@ -159,4 +168,16 @@ textarea {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Disable annoying mobile highlighting on interactive elements */
+@media (max-width: 768px) {
+  button, 
+  [role="button"],
+  .interactive-element {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 }

@@ -70,6 +70,7 @@ service cloud.firestore {
              (!('role' in data) || (data.role is string && data.role.size() < 20)) &&
              (!('paypalSubscriptionId' in data) || (data.paypalSubscriptionId is string && data.paypalSubscriptionId.size() < 100)) &&
              (!('selectedAnimation' in data) || (data.selectedAnimation is string && data.selectedAnimation.size() < 50)) &&
+             (!('isEcoMode' in data) || data.isEcoMode is bool) &&
              (!('approved' in data) || data.approved is bool) &&
              (!('isBanned' in data) || data.isBanned is bool) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
@@ -110,7 +111,7 @@ service cloud.firestore {
                     isValidUser(request.resource.data) && 
                     (isAdmin() || (
                       request.resource.data.keys().hasAll(['tier', 'totalReleases', 'theme', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
-                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
+                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode']) &&
                       request.resource.data.tier == 'free' &&
                       request.resource.data.approved == false &&
                       request.resource.data.isBanned == false
@@ -120,7 +121,7 @@ service cloud.firestore {
       allow update: if (isAdmin() || (isOwner(userId) && isNotBanned())) && 
                     isValidUser(request.resource.data) &&
                     (isAdmin() || (
-                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
+                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode']) &&
                       (request.resource.data.tier == resource.data.tier || request.resource.data.tier == 'pro') &&
                       (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
                       (!('approved' in request.resource.data) || request.resource.data.approved == resource.data.approved) &&

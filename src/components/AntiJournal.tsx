@@ -92,6 +92,7 @@ interface UserData {
   history: ReleaseEntry[];
   theme: Theme;
   selectedAnimation?: string;
+  isEcoMode?: boolean;
   paypalSubscriptionId?: string;
 }
 
@@ -104,7 +105,8 @@ const defaultUserData: UserData = {
   lastMonthlyUpdate: Date.now(),
   history: [],
   theme: 'stardust',
-  selectedAnimation: 'random'
+  selectedAnimation: 'random',
+  isEcoMode: false
 };
 
 const CosmicCanvas = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
@@ -583,7 +585,7 @@ const StarField = ({ count = 100, color = '#ffffff', speed = 1, reduceMotion = f
     window.addEventListener('resize', resize);
     resize();
 
-    const render = (time: number) => {
+    function render(time: number) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       stars.forEach(star => {
@@ -871,7 +873,7 @@ const ThemePreviewCard = ({ theme, reduceMotion = false }: { theme: Theme, reduc
   );
 };
 
-const AmbientBackground = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
+const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: { theme: Theme, reduceMotion?: boolean, isEcoMode?: boolean }) => {
   const colors = ({
     stardust: ['#0f172a', '#1e293b', '#000000', '#334155'],
     retroGrid: ['#064e3b', '#065f46', '#000000', '#047857'],
@@ -894,6 +896,23 @@ const AmbientBackground = ({ theme, reduceMotion = false }: { theme: Theme, redu
   } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
 
   const blendMode = '';
+
+  if (isEcoMode) {
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 transition-colors duration-1000" style={{ transform: 'translateZ(0)' }}>
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            background: `radial-gradient(circle at 30% 30%, ${colors[0]} 0%, transparent 70%),
+                         radial-gradient(circle at 70% 70%, ${colors[1]} 0%, transparent 70%),
+                         ${colors[2]}`
+          }}
+        />
+        {/* High contrast noise overlay for texture */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 transition-colors duration-1000" style={{ transform: 'translateZ(0)' }}>
@@ -1251,6 +1270,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
   const [showProModal, setShowProModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [isEcoMode, setIsEcoMode] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [hoveredAnim, setHoveredAnim] = useState<string | null>(null);
   const [onlineUsers, setOnlineUsers] = useState(0);
@@ -1317,6 +1337,13 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
 
   // Auth Listener
   useEffect(() => {
+    // Auto-detect mobile for Eco Mode
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) {
+      setIsEcoMode(true);
+      setReduceMotion(true);
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
@@ -1377,7 +1404,9 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           lastMonthlyUpdate: data.lastMonthlyUpdate || Date.now(),
           theme: data.theme || 'void',
           selectedAnimation: data.selectedAnimation || 'random',
+          isEcoMode: data.isEcoMode ?? prev.isEcoMode,
         }));
+        if (data.isEcoMode !== undefined) setIsEcoMode(data.isEcoMode);
       } else {
         // Initialize user in Firestore if they don't exist
         const initialData = {
@@ -1388,6 +1417,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           monthlyReleases: 0,
           lastMonthlyUpdate: Date.now(),
           theme: 'void',
+          isEcoMode: isEcoMode, // Use the auto-detected value
           email: user.email,
           updatedAt: serverTimestamp()
         };
@@ -1893,8 +1923,12 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
   }
 
   return (
-    <div className={cn("h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000", currentTheme.bg)} style={{ perspective: '2000px' }}>
-      <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} />
+    <div className={cn(
+      "h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000",
+      currentTheme.bg,
+      isEcoMode && "eco-mode"
+    )} style={{ perspective: '2000px' }}>
+      <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} isEcoMode={isEcoMode} />
       <VoidGarden fragments={fragments} reduceMotion={reduceMotion} />
       
       {/* Hold Overlay */}
@@ -2092,12 +2126,13 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                         {text.trim() && (
                           <motion.button
                             initial={{ opacity: 0, scale: 0.5, rotate: -45 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
-                            whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }} whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }} 
+                            whileTap={{ scale: 0.95 }}
                             onPointerDown={startHold}
                             onPointerUp={stopHold}
                             onPointerLeave={stopHold}
                             className={cn(
-                              "liquid-glass-strong rounded-full p-2.5 text-white transition-colors flex items-center justify-center group cursor-pointer relative overflow-hidden",
+                              "liquid-glass-strong rounded-full p-2.5 text-white transition-colors flex items-center justify-center group cursor-pointer relative overflow-hidden touch-none select-none",
                               isHolding && "ring-2 ring-white/50"
                             )}
                           >
@@ -2351,24 +2386,49 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                   {/* Right Column: Settings */}
                   <div className="lg:col-span-7 space-y-12">
                     <section>
-                      <div className="flex items-center justify-between mb-8">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
                         <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold">
                           Visual Preferences
                         </h3>
-                        <div className="flex items-center gap-4 p-1 rounded-full bg-white/5 border border-white/5">
-                          <span className="pl-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Reduce Motion</span>
-                          <button
-                            onClick={() => setReduceMotion(!reduceMotion)}
-                            className={cn(
-                              "relative w-12 h-6 rounded-full transition-colors duration-300",
-                              reduceMotion ? "bg-emerald-500" : "bg-white/10"
-                            )}
-                          >
-                            <motion.div
-                              animate={{ x: reduceMotion ? 26 : 2 }}
-                              className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                            />
-                          </button>
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          <div className="flex items-center gap-4 p-1 rounded-full bg-white/5 border border-white/5">
+                            <span className="pl-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Reduce Motion</span>
+                            <button
+                              onClick={() => setReduceMotion(!reduceMotion)}
+                              className={cn(
+                                "relative w-12 h-6 rounded-full transition-colors duration-300",
+                                reduceMotion ? "bg-emerald-500" : "bg-white/10"
+                              )}
+                            >
+                              <motion.div
+                                animate={{ x: reduceMotion ? 26 : 2 }}
+                                className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                              />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-4 p-1 rounded-full bg-white/5 border border-white/5">
+                            <div className="flex flex-col pl-4">
+                              <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Eco Mode</span>
+                              <span className="text-[8px] text-white/20 uppercase tracking-tighter">Max Performance</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const newVal = !isEcoMode;
+                                setIsEcoMode(newVal);
+                                setReduceMotion(newVal);
+                                saveUserData({ isEcoMode: newVal });
+                              }}
+                              className={cn(
+                                "relative w-12 h-6 rounded-full transition-colors duration-300",
+                                isEcoMode ? "bg-indigo-500" : "bg-white/10"
+                              )}
+                            >
+                              <motion.div
+                                animate={{ x: isEcoMode ? 26 : 2 }}
+                                className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                              />
+                            </button>
+                          </div>
                         </div>
                       </div>
 

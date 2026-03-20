@@ -55,6 +55,10 @@
         "isBanned": {
           "type": "boolean",
           "description": "Whether the user has been banned"
+        },
+        "isEcoMode": {
+          "type": "boolean",
+          "description": "Whether the user has enabled Eco Mode for performance"
         }
       },
       "required": ["tier", "totalReleases", "theme", "email", "approved", "isBanned"]
