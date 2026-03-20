@@ -624,71 +624,153 @@ const AbyssSink = ({ text, theme, isPreview = false, reduceMotion = false }: { t
 const GlassShatter = ({ text, theme, isPreview = false, reduceMotion = false }: { text: string, theme: string, isPreview?: boolean, reduceMotion?: boolean }) => {
   const color = THEME_COLORS[theme as keyof typeof THEME_COLORS] || '#ffffff';
   const words = isPreview ? [] : text.split(' ');
-  const shards = Array.from({ length: isPreview ? 15 : 40 }).map((_, i) => ({
-    id: i,
-    x: (Math.random() - 0.5) * 1000,
-    y: (Math.random() - 0.5) * 1000,
-    rotate: (Math.random() - 0.5) * 720,
-    scale: Math.random() * 2 + 0.5,
-    delay: Math.random() * 0.1
-  }));
+  
+  // Realistic glass shard shapes
+  const shardShapes = [
+    'polygon(0% 0%, 100% 20%, 80% 100%, 10% 80%)',
+    'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+    'polygon(20% 0%, 80% 10%, 100% 90%, 0% 100%)',
+    'polygon(0% 20%, 100% 0%, 80% 100%, 20% 80%)',
+    'polygon(30% 0%, 100% 30%, 70% 100%, 0% 70%)'
+  ];
+
+  const shards = Array.from({ length: isPreview ? 15 : 45 }).map((_, i) => {
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 200 + Math.random() * 800;
+    return {
+      id: i,
+      x: Math.cos(angle) * velocity,
+      y: Math.sin(angle) * velocity,
+      rotateX: Math.random() * 720 - 360,
+      rotateY: Math.random() * 720 - 360,
+      rotateZ: Math.random() * 720 - 360,
+      scale: Math.random() * 1.5 + 0.5,
+      shape: shardShapes[i % shardShapes.length],
+      delay: Math.random() * 0.1,
+      duration: 1.5 + Math.random() * 1.5
+    };
+  });
+
+  const dust = Array.from({ length: isPreview ? 20 : 60 }).map((_, i) => {
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 50 + Math.random() * 300;
+    return {
+      id: i,
+      x: Math.cos(angle) * velocity,
+      y: Math.sin(angle) * velocity,
+      scale: Math.random() * 0.5 + 0.1,
+      delay: Math.random() * 0.2,
+      duration: 2 + Math.random() * 2
+    };
+  });
 
   return (
-    <div className={isPreview ? "absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden" : "fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden"}>
+    <div className={isPreview ? "absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden" : "fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden"} style={{ perspective: '1000px' }}>
+      {/* Background Flash */}
       {!reduceMotion && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 1, 0] }}
-          transition={{ duration: 0.5, ease: "circOut" }}
-          className="absolute inset-0 bg-white z-50"
+          transition={{ duration: 0.4, ease: "circOut" }}
+          className="absolute inset-0 bg-white z-10"
         />
       )}
 
-      {!isPreview && (
-        <div className="relative z-20 text-4xl md:text-6xl lg:text-7xl font-sans font-bold text-center max-w-5xl px-8 flex flex-wrap justify-center gap-x-4 gap-y-2">
-          {words.map((word, i) => (
-            <motion.span
-              key={i}
-              initial={{ opacity: 1, y: 0, x: 0, rotate: 0, scale: 1 }}
-              animate={reduceMotion ? { opacity: [1, 0] } : { 
-                opacity: [1, 1, 0], 
-                y: [0, Math.random() * 500 + 200],
-                x: [(Math.random() - 0.5) * 400],
-                rotate: [(Math.random() - 0.5) * 360],
-                scale: [1, 0.8, 0]
-              }}
-              transition={{ duration: 2.5 + Math.random(), delay: 0.1, ease: "easeIn" }}
-              className="inline-block will-change-transform will-change-opacity"
-              style={{ textShadow: `0 0 10px ${color}` }}
-            >
-              {word}
-            </motion.span>
-          ))}
-        </div>
-      )}
+      {/* Screen Shake Container */}
+      <motion.div 
+        animate={reduceMotion ? {} : {
+          x: [0, -10, 10, -5, 5, 0],
+          y: [0, 10, -10, 5, -5, 0]
+        }}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
+        className="absolute inset-0 flex items-center justify-center z-20"
+      >
+        {/* Shockwave */}
+        {!reduceMotion && !isPreview && (
+          <motion.div
+            initial={{ scale: 0, opacity: 1, borderWidth: '20px' }}
+            animate={{ scale: 4, opacity: 0, borderWidth: '0px' }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="absolute w-64 h-64 rounded-full border-white z-20"
+            style={{ filter: 'blur(4px)' }}
+          />
+        )}
 
-      {!reduceMotion && shards.map(s => (
-        <motion.div
-          key={s.id}
-          initial={{ opacity: 0, x: 0, y: 0, scale: 0, rotate: 0 }}
-          animate={{ 
-            opacity: [0, 0.8, 0],
-            x: [0, s.x],
-            y: [0, s.y + 400],
-            scale: [0, s.scale, s.scale * 0.5],
-            rotate: [0, s.rotate + 360]
-          }}
-          transition={{ duration: 2.5, delay: s.delay, ease: "easeOut" }}
-          className="absolute w-0 h-0 z-30 will-change-transform will-change-opacity"
-          style={{ 
-            borderLeft: '10px solid transparent',
-            borderRight: '10px solid transparent',
-            borderBottom: `20px solid ${color}`,
-            filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))',
-            opacity: 0.6
-          }}
-        />
-      ))}
+        {/* Text */}
+        {!isPreview && (
+          <div className="relative z-30 text-4xl md:text-6xl lg:text-7xl font-sans font-black text-center max-w-5xl px-8 flex flex-wrap justify-center gap-x-4 gap-y-2">
+            {words.map((word, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 1, z: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1 }}
+                animate={reduceMotion ? { opacity: [1, 0] } : { 
+                  opacity: [1, 1, 0], 
+                  z: [0, Math.random() * 500 + 200],
+                  x: [(Math.random() - 0.5) * 600],
+                  y: [(Math.random() - 0.5) * 600 + 200], // Gravity bias
+                  rotateX: [(Math.random() - 0.5) * 360],
+                  rotateY: [(Math.random() - 0.5) * 360],
+                  rotateZ: [(Math.random() - 0.5) * 360],
+                  scale: [1, 1.2, 0]
+                }}
+                transition={{ duration: 2 + Math.random(), ease: [0.19, 1, 0.22, 1] }} // easeOutExpo
+                className="inline-block will-change-transform will-change-opacity"
+                style={{ 
+                  textShadow: `0 0 20px ${color}, 0 0 40px ${color}`,
+                  transformStyle: 'preserve-3d'
+                }}
+              >
+                {word}
+              </motion.span>
+            ))}
+          </div>
+        )}
+
+        {/* Glass Shards */}
+        {!reduceMotion && shards.map(s => (
+          <motion.div
+            key={s.id}
+            initial={{ opacity: 0, x: 0, y: 0, z: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scale: 0 }}
+            animate={{ 
+              opacity: [0, 1, 1, 0],
+              x: s.x,
+              y: s.y + 400, // Gravity
+              z: Math.random() * 400 - 200,
+              rotateX: s.rotateX,
+              rotateY: s.rotateY,
+              rotateZ: s.rotateZ,
+              scale: [0, s.scale, s.scale * 0.5]
+            }}
+            transition={{ duration: s.duration, delay: s.delay, ease: [0.19, 1, 0.22, 1] }}
+            className="absolute w-12 h-12 z-40 will-change-transform will-change-opacity"
+            style={{ 
+              clipPath: s.shape,
+              background: `linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.1) 100%)`,
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.5)',
+              boxShadow: `0 0 15px ${color}, inset 0 0 10px rgba(255,255,255,0.8)`,
+              transformStyle: 'preserve-3d'
+            }}
+          />
+        ))}
+
+        {/* Dust Particles */}
+        {!reduceMotion && dust.map(d => (
+          <motion.div
+            key={`dust-${d.id}`}
+            initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+            animate={{ 
+              opacity: [0, 0.8, 0],
+              x: d.x,
+              y: d.y + 100,
+              scale: [0, d.scale, 0]
+            }}
+            transition={{ duration: d.duration, delay: d.delay, ease: "easeOut" }}
+            className="absolute w-2 h-2 bg-white rounded-full z-30 will-change-transform will-change-opacity"
+            style={{ boxShadow: `0 0 10px ${color}` }}
+          />
+        ))}
+      </motion.div>
     </div>
   );
 };
@@ -952,72 +1034,166 @@ const GlacialFreeze = ({ text, theme, isPreview = false, reduceMotion = false }:
 
 const PrismaticBurst = ({ text, theme, isPreview = false, reduceMotion = false }: { text: string, theme: string, isPreview?: boolean, reduceMotion?: boolean }) => {
   const words = isPreview ? [] : text.split(' ');
-  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
-  const rays = Array.from({ length: isPreview ? 20 : 80 }).map((_, i) => {
+  const colors = ['#ff0055', '#ffaa00', '#00ffaa', '#00aaff', '#aa00ff', '#ff00aa', '#ffff00'];
+  
+  // Optimized particle count and rendering
+  const streaks = Array.from({ length: isPreview ? 15 : 45 }).map((_, i) => {
     const angle = Math.random() * Math.PI * 2;
-    const velocity = 400 + Math.random() * 800;
+    const velocity = 800 + Math.random() * 1200;
     return {
       id: i,
       angle: angle * (180 / Math.PI),
       x: Math.cos(angle) * velocity,
       y: Math.sin(angle) * velocity,
-      length: 20 + Math.random() * 80,
-      delay: Math.random() * 0.2
+      length: 100 + Math.random() * 200,
+      thickness: 2 + Math.random() * 4,
+      delay: Math.random() * 0.15,
+      duration: 0.6 + Math.random() * 0.6
+    };
+  });
+
+  const orbs = Array.from({ length: isPreview ? 10 : 25 }).map((_, i) => {
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 300 + Math.random() * 800;
+    return {
+      id: i,
+      x: Math.cos(angle) * velocity,
+      y: Math.sin(angle) * velocity,
+      scale: Math.random() * 2 + 1,
+      delay: Math.random() * 0.1,
+      duration: 1 + Math.random() * 1
     };
   });
 
   return (
-    <div className={isPreview ? "absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden" : "fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden bg-black/80"}>
-      {!isPreview && (
-        <div className="relative z-20 text-4xl md:text-6xl lg:text-7xl font-sans font-black text-center max-w-5xl px-8 flex flex-wrap justify-center gap-x-4 gap-y-2">
-          {words.map((word, i) => {
-            const wordColor = colors[i % colors.length];
-            return (
-              <motion.span
-                key={i}
-                initial={{ opacity: 1, y: 0, x: 0, scale: 1, color: '#ffffff', filter: 'brightness(1)' }}
-                animate={reduceMotion ? { opacity: [1, 0] } : { 
-                  opacity: [1, 1, 0], 
-                  y: [0, (Math.random() - 0.5) * 200],
-                  x: [0, (Math.random() - 0.5) * 200],
-                  scale: [1, 1.5, 0],
-                  color: ['#ffffff', wordColor, wordColor],
-                  filter: ['brightness(1)', 'brightness(2)', 'brightness(0)']
-                }}
-                transition={{ duration: 2, delay: Math.random() * 0.1, ease: "easeIn" }}
-                className="inline-block will-change-transform will-change-opacity"
-                style={{ textShadow: `0 0 30px ${wordColor}` }}
-              >
-                {word}
-              </motion.span>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Light Rays / Fireworks */}
-      {!reduceMotion && rays.map((r, i) => {
-        const pColor = colors[i % colors.length];
-        return (
+    <div className={isPreview ? "absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden" : "fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden bg-black/90"} style={{ perspective: '1000px' }}>
+      
+      {/* Implosion / Flash - Removed blur/mixBlendMode for performance */}
+      {!reduceMotion && !isPreview && (
+        <>
           <motion.div
-            key={r.id}
-            initial={{ opacity: 0, x: 0, y: 0, scaleX: 0, rotate: r.angle }}
-            animate={{ 
-              opacity: [0, 1, 0],
-              x: [0, r.x],
-              y: [0, r.y + 200], // Gravity pull
-              scaleX: [0, 1, 0.5]
-            }}
-            transition={{ duration: 2, delay: 0.5 + r.delay, ease: "easeOut" }}
-            className="absolute h-1 rounded-full z-30 origin-left will-change-transform will-change-opacity"
+            initial={{ scale: 8, opacity: 0 }}
+            animate={{ scale: 0, opacity: [0, 1, 1] }}
+            transition={{ duration: 0.4, ease: "easeIn" }}
+            className="absolute w-32 h-32 rounded-full z-10 will-change-transform"
             style={{ 
-              width: r.length,
-              backgroundColor: pColor, 
-              boxShadow: `0 0 20px ${pColor}, 0 0 40px ${pColor}` 
+              background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 70%)'
             }}
           />
-        );
-      })}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0, 1, 0] }}
+            transition={{ duration: 0.8, times: [0, 0.4, 0.5, 1], ease: "easeOut" }}
+            className="absolute inset-0 bg-white z-10 will-change-opacity"
+          />
+        </>
+      )}
+
+      {/* Screen Shake Container */}
+      <motion.div 
+        animate={reduceMotion ? {} : {
+          x: [0, 10, -10, 8, -8, 4, -4, 0],
+          y: [0, -10, 10, -8, 8, -4, 4, 0]
+        }}
+        transition={{ duration: 0.5, delay: 0.4, ease: "backOut" }}
+        className="absolute inset-0 flex items-center justify-center z-20"
+      >
+        {/* Rainbow Shockwaves - Removed blur, using solid borders */}
+        {!reduceMotion && !isPreview && [0, 1, 2].map(i => {
+          const color = colors[i % colors.length];
+          return (
+            <motion.div
+              key={`shockwave-${i}`}
+              initial={{ scale: 0, opacity: 1, borderWidth: '40px' }}
+              animate={{ scale: 4 + i * 2, opacity: 0, borderWidth: '0px' }}
+              transition={{ duration: 0.8 + i * 0.2, delay: 0.4, ease: "easeOut" }}
+              className="absolute w-64 h-64 rounded-full z-20 will-change-transform"
+              style={{ 
+                borderColor: color,
+                borderStyle: 'solid'
+              }}
+            />
+          );
+        })}
+
+        {/* Text */}
+        {!isPreview && (
+          <div className="relative z-40 text-4xl md:text-6xl lg:text-7xl font-sans font-black text-center max-w-5xl px-8 flex flex-wrap justify-center gap-x-4 gap-y-2">
+            {words.map((word, i) => {
+              const wordColor = colors[i % colors.length];
+              return (
+                <motion.span
+                  key={i}
+                  initial={{ opacity: 1, z: 0, x: 0, y: 0, scale: 1, color: '#ffffff' }}
+                  animate={reduceMotion ? { opacity: [1, 0] } : { 
+                    opacity: [1, 1, 0], 
+                    z: [0, Math.random() * 400 + 200],
+                    y: [(Math.random() - 0.5) * 800],
+                    x: [(Math.random() - 0.5) * 800],
+                    scale: [1, 2, 0],
+                    color: ['#ffffff', wordColor, wordColor],
+                    rotate: [(Math.random() - 0.5) * 90]
+                  }}
+                  transition={{ duration: 1.2, delay: 0.4, ease: [0.19, 1, 0.22, 1] }}
+                  className="inline-block will-change-transform will-change-opacity"
+                  style={{ 
+                    textShadow: `0 0 20px ${wordColor}`,
+                    transformStyle: 'preserve-3d'
+                  }}
+                >
+                  {word}
+                </motion.span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* High-Velocity Streaks - Removed boxShadow, using linear-gradient */}
+        {!reduceMotion && streaks.map((r, i) => {
+          const pColor = colors[i % colors.length];
+          return (
+            <motion.div
+              key={`streak-${r.id}`}
+              initial={{ opacity: 0, x: 0, y: 0, scaleX: 0, rotate: r.angle }}
+              animate={{ 
+                opacity: [0, 1, 0],
+                x: r.x,
+                y: r.y,
+                scaleX: [0, 1, 0.2]
+              }}
+              transition={{ duration: r.duration, delay: 0.4 + r.delay, ease: [0.19, 1, 0.22, 1] }}
+              className="absolute rounded-full z-30 origin-left will-change-transform will-change-opacity"
+              style={{ 
+                width: r.length,
+                height: r.thickness,
+                background: `linear-gradient(90deg, rgba(255,255,255,1) 0%, ${pColor} 50%, transparent 100%)`
+              }}
+            />
+          );
+        })}
+
+        {/* Glowing Orbs - Removed blur, using radial-gradient */}
+        {!reduceMotion && orbs.map((o, i) => {
+          const pColor = colors[i % colors.length];
+          return (
+            <motion.div
+              key={`orb-${o.id}`}
+              initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+              animate={{ 
+                opacity: [0, 0.8, 0],
+                x: o.x,
+                y: o.y,
+                scale: [0, o.scale, 0]
+              }}
+              transition={{ duration: o.duration, delay: 0.4 + o.delay, ease: "easeOut" }}
+              className="absolute w-12 h-12 rounded-full z-30 will-change-transform will-change-opacity"
+              style={{ 
+                background: `radial-gradient(circle, ${pColor} 0%, transparent 70%)`
+              }}
+            />
+          );
+        })}
+      </motion.div>
     </div>
   );
 };
