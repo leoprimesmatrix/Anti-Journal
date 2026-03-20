@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user preferences and subscription status",
+      "type": "object",
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["free", "pro"],
+          "description": "User's subscription tier"
+        },
+        "totalReleases": {
+          "type": "integer",
+          "description": "Total number of thoughts released"
+        },
+        "dailyReleases": {
+          "type": "integer",
+          "description": "Number of thoughts released today"
+        },
+        "lastDailyUpdate": {
+          "type": "integer",
+          "description": "Timestamp of the last daily release update"
+        },
+        "monthlyReleases": {
+          "type": "integer",
+          "description": "Number of thoughts released this month"
+        },
+        "lastMonthlyUpdate": {
+          "type": "integer",
+          "description": "Timestamp of the last monthly release update"
+        },
+        "theme": {
+          "type": "string",
+          "description": "Selected UI theme"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last time the profile was updated"
+        },
+        "selectedAnimation": {
+          "type": "string",
+          "description": "User's preferred release animation"
+        }
+      },
+      "required": ["tier", "totalReleases", "theme", "email"]
+    },
+    "HistoryEntry": {
+      "title": "History Entry",
+      "description": "A record of a released thought",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "snippet": { "type": "string" },
+        "animation": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "snippet", "animation"]
+    },
+    "Fragment": {
+      "title": "Void Fragment",
+      "description": "An abstract visual representation of a released thought",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["seed", "crystal", "nebula", "orb"] },
+        "color": { "type": "string" },
+        "size": { "type": "number" },
+        "intensity": { "type": "number" },
+        "timestamp": { "type": "integer" },
+        "ritualMode": { "type": "string" }
+      },
+      "required": ["id", "type", "color", "size", "timestamp"]
+    },
+    "GlobalStats": {
+      "title": "Global Stats",
+      "description": "Aggregated statistics for the entire platform",
+      "type": "object",
+      "properties": {
+        "totalReleases": { "type": "integer" },
+        "lastReleaseAt": { "type": "integer" }
+      },
+      "required": ["totalReleases"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User's main profile document"
+    },
+    "/users/{userId}/history/{entryId}": {
+      "schema": "HistoryEntry",
+      "description": "Individual history entries for the user"
+    },
+    "/users/{userId}/fragments/{fragmentId}": {
+      "schema": "Fragment",
+      "description": "Abstract fragments in the user's personal void"
+    },
+    "/global/stats": {
+      "schema": "GlobalStats",
+      "description": "Global statistics for all users"
+    },
+    "/presence/{userId}": {
+      "schema": {
+        "title": "User Presence",
+        "description": "Tracks user online status",
+        "type": "object",
+        "properties": {
+          "lastSeen": { "type": "string", "format": "date-time" },
+          "uid": { "type": "string" }
+        },
+        "required": ["lastSeen", "uid"]
+      },
+      "description": "User's current online presence"
+    }
+  }
+}

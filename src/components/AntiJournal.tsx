@@ -1,233 +1,1067 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Lock, Sparkles, History, Palette, Activity, X, CheckCircle2, Zap, LogOut, TrendingUp, Twitter, Github, Mountain, Diamond, Orbit, Grid3X3, Waves, Layers, User, Eye } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { format, subDays, isSameMonth, isSameDay } from 'date-fns';
+import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, FirebaseUser, handleFirestoreError, OperationType } from '../firebase';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, where } from 'firebase/firestore';
+import { ANIMATIONS_CONFIG, ActiveAnimationComponent, THEME_COLORS, GlobalPulse } from './ReleaseAnimations';
+import { VoidGarden, Fragment } from './VoidGarden';
 
-const AmbientBackground = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" style={{ transform: 'translateZ(0)' }}>
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(40,10,70,0.4)_0%,_rgba(5,0,10,1)_70%)]" />
-    <motion.div
-      className="absolute top-1/2 left-1/2 rounded-full mix-blend-screen opacity-60 will-change-transform"
-      style={{ width: '140vw', height: '140vh', background: 'radial-gradient(circle, rgba(29, 78, 216, 0.15) 0%, transparent 60%)', filter: 'blur(80px)', x: '-50%', y: '-50%' }}
-      animate={{ x: ['-60%', '-40%', '-50%', '-60%'], y: ['-60%', '-40%', '-70%', '-60%'], scale: [1, 1.1, 0.95, 1] }}
-      transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-    />
-    <div className="absolute inset-0 mix-blend-screen opacity-60"><div className="bg-beams" /></div>
-    {Array.from({ length: 80 }).map((_, i) => {
-      const isBlue = Math.random() > 0.5;
-      const size = Math.random() * 3 + 1;
-      const glowColor = isBlue ? 'rgba(96, 165, 250, 0.5)' : 'rgba(192, 132, 252, 0.5)';
-      return (
-        <motion.div
-          key={i}
-          className={`absolute rounded-full ${isBlue ? 'bg-blue-400/80' : 'bg-purple-400/80'} will-change-transform`}
-          style={{ width: size, height: size, left: Math.random() * 100 + '%', top: Math.random() * 100 + '%', boxShadow: `0 0 10px ${glowColor}` }}
-          animate={{ y: [0, -Math.random() * 200 - 100], x: [0, (Math.random() - 0.5) * 100], opacity: [0, Math.random() * 0.8 + 0.2, 0], scale: [0.5, 1.5, 0.5] }}
-          transition={{ duration: Math.random() * 15 + 10, repeat: Infinity, ease: "linear", delay: Math.random() * 15 }}
-        />
-      );
-    })}
-  </div>
-);
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
-const FullScreenFlash = ({ color = "bg-purple-100" }: { color?: string }) => (
-  <motion.div
-    initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.8, ease: [0.1, 1, 0.3, 1] }}
-    className={`fixed inset-0 ${color} mix-blend-overlay pointer-events-none z-50`} style={{ transform: 'translateZ(0)' }}
-  />
-);
+type RitualMode = 'heavy' | 'mist' | 'echo' | 'standard' | 'oracle';
 
-const Shockwave = ({ delay = 0, duration = 1, color = "border-purple-400" }: { key?: string | number, delay?: number, duration?: number, color?: string }) => (
-  <motion.div
-    initial={{ width: '100px', height: '100px', opacity: 1, borderWidth: '20px' }}
-    animate={{ width: '200vw', height: '200vw', opacity: 0, borderWidth: '1px' }}
-    transition={{ duration, ease: "easeOut", delay }}
-    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-solid ${color} mix-blend-screen pointer-events-none z-40 will-change-transform`}
-    style={{ transform: 'translate(-50%, -50%) translateZ(0)' }}
-  />
-);
+const RITUAL_MODES: Record<RitualMode, { name: string, description: string, icon: React.ReactNode }> = {
+  standard: { name: 'Standard', description: 'The classic void experience.', icon: <Zap className="w-4 h-4" /> },
+  heavy: { name: 'Heavy Lift', description: 'For deep trauma or intense anger.', icon: <Activity className="w-4 h-4" /> },
+  mist: { name: 'Morning Mist', description: 'For light anxieties and brain fog.', icon: <Sparkles className="w-4 h-4" /> },
+  echo: { name: 'Midnight Echo', description: 'For secrets and things unsaid.', icon: <History className="w-4 h-4" /> },
+  oracle: { name: 'The Oracle', description: 'Seek guidance from the void.', icon: <Eye className="w-4 h-4" /> },
+};
 
-const BlackHoleEffect = () => (
-  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-    <motion.div
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: [0, 1.5, 1], opacity: [0, 1, 1] }}
-      transition={{ duration: 1.2, ease: "easeOut" }}
-      className="relative w-96 h-96 flex items-center justify-center"
-    >
-      {/* Event Horizon Glow */}
-      <motion.div
-        animate={{ rotate: 360, scale: [1, 1.15, 1] }}
-        transition={{ rotate: { duration: 8, repeat: Infinity, ease: "linear" }, scale: { duration: 3, repeat: Infinity, ease: "easeInOut" } }}
-        className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 via-blue-600 to-black blur-[60px] opacity-60"
-      />
+const HEADINGS = [
+  "What's weighing on your mind?",
+  "What are you holding onto?",
+  "What needs to be released?",
+  "What's the heavy thought today?",
+  "Speak your truth to the silence.",
+  "What's echoing in your heart?",
+  "Let it all out here.",
+  "What's the burden you carry?",
+];
+
+const SUBHEADINGS = [
+  "The universe is listening.",
+  "The silence is your witness.",
+  "The stars will hold your secrets.",
+  "Release it to the infinite.",
+  "Your words belong to the void now.",
+  "Let the darkness consume the weight.",
+  "Find peace in the release.",
+  "The cosmos absorbs your heavy thoughts.",
+];
+
+type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss';
+
+const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, icon: React.ReactNode }> = {
+  // New Premium Themes
+  stardust: { bg: 'bg-[#020205]', accent: 'slate', text: 'text-slate-100', name: 'Stardust', isPro: false, icon: <Sparkles className="w-5 h-5" /> },
+  retroGrid: { bg: 'bg-[#050505]', accent: 'emerald', text: 'text-emerald-400', name: 'Retro Grid', isPro: true, icon: <Grid3X3 className="w-5 h-5" /> },
+  auroraBorealis: { bg: 'bg-[#010409]', accent: 'teal', text: 'text-teal-100', name: 'Aurora Borealis', isPro: true, icon: <Waves className="w-5 h-5" /> },
+  sereneLandscape: { bg: 'bg-[#0a0a0a]', accent: 'stone', text: 'text-stone-100', name: 'Serene Landscape', isPro: true, icon: <Mountain className="w-5 h-5" /> },
+  obsidian: { bg: 'bg-[#000000]', accent: 'zinc', text: 'text-zinc-400', name: 'Obsidian', isPro: false, icon: <Diamond className="w-5 h-5" /> },
+  nebula: { bg: 'bg-[#05000a]', accent: 'pink', text: 'text-pink-100', name: 'Nebula', isPro: true, icon: <Orbit className="w-5 h-5" /> },
+  
+  // Refined Original Themes (Darker)
+  liquidGlass: { bg: 'bg-[#000000]', accent: 'white', text: 'text-white', name: 'Liquid Glass', isPro: true, icon: <Layers className="w-5 h-5" /> },
+  cinematicNoir: { bg: 'bg-[#030303]', accent: 'zinc', text: 'text-zinc-400', name: 'Cinematic Noir', isPro: false, icon: <Sparkles className="w-5 h-5" /> },
+  auroraGlow: { bg: 'bg-[#010208]', accent: 'emerald', text: 'text-emerald-200', name: 'Aurora Glow', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
+  minimalLuxury: { bg: 'bg-[#050505]', accent: 'stone', text: 'text-stone-300', name: 'Minimal Luxury', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
+  futuristicEditorial: { bg: 'bg-[#000000]', accent: 'orange', text: 'text-orange-200', name: 'Futuristic Editorial', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
+  softHolographic: { bg: 'bg-[#050414]', accent: 'fuchsia', text: 'text-fuchsia-200', name: 'Soft Holographic', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
+  deepSpace: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-300', name: 'Deep Space', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
+  
+  // Legacy Themes
+  void: { bg: 'bg-[#030008]', accent: 'purple', text: 'text-purple-300', name: 'The Void', isPro: false, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  midnight: { bg: 'bg-[#00040a]', accent: 'blue', text: 'text-blue-300', name: 'Midnight', isPro: false, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  crimson: { bg: 'bg-[#0a0202]', accent: 'red', text: 'text-red-300', name: 'Crimson', isPro: true, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  ethereal: { bg: 'bg-[#010208]', accent: 'slate', text: 'text-slate-300', name: 'Ethereal', isPro: true, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  abyss: { bg: 'bg-[#020202]', accent: 'zinc', text: 'text-zinc-500', name: 'Abyss', isPro: true, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+};
+
+interface ReleaseEntry {
+  id: string;
+  timestamp: number;
+  snippet: string; // A blurred or short version of what they released
+  animation: string;
+}
+
+interface UserData {
+  tier: 'free' | 'pro';
+  totalReleases: number;
+  dailyReleases: number;
+  lastDailyUpdate: number;
+  monthlyReleases: number;
+  lastMonthlyUpdate: number;
+  history: ReleaseEntry[];
+  theme: Theme;
+  selectedAnimation?: string;
+  paypalSubscriptionId?: string;
+}
+
+const defaultUserData: UserData = {
+  tier: 'free',
+  totalReleases: 0,
+  dailyReleases: 0,
+  lastDailyUpdate: Date.now(),
+  monthlyReleases: 0,
+  lastMonthlyUpdate: Date.now(),
+  history: [],
+  theme: 'stardust',
+  selectedAnimation: 'random'
+};
+
+const CosmicCanvas = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mousePos = useRef({ x: 0, y: 0 });
+  const timeRef = useRef(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePos.current = {
+        x: (e.clientX / window.innerWidth - 0.5) * 50,
+        y: (e.clientY / window.innerHeight - 0.5) * 50
+      };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    
+    // Configuration based on theme
+    const isNebula = theme === 'nebula' || theme === 'softHolographic';
+    const isDeepSpace = theme === 'deepSpace' || theme === 'void';
+    
+    // Nebula blobs
+    const nebulaColors = isNebula 
+      ? ['rgba(112, 26, 117, 0.15)', 'rgba(76, 5, 25, 0.15)', 'rgba(5, 0, 10, 0.2)']
+      : ['rgba(30, 27, 75, 0.1)', 'rgba(15, 23, 42, 0.1)', 'rgba(0, 0, 0, 0.2)'];
       
-      {/* Accretion Disk - 3D feel */}
+    const blobs = Array.from({ length: 6 }).map((_, i) => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 40 + 40, // 40% to 80% of screen
+      vx: (Math.random() - 0.5) * 0.02,
+      vy: (Math.random() - 0.5) * 0.02,
+      color: nebulaColors[i % nebulaColors.length],
+      phase: Math.random() * Math.PI * 2,
+      pulseSpeed: Math.random() * 0.001 + 0.0005
+    }));
+
+    // Galaxy parameters
+    const galaxies = isDeepSpace ? [
+      { x: 80, y: 20, size: 45, color: '#818cf8', rotation: 0, rotSpeed: 0.0008, arms: 3, opacity: 0.6 },
+      { x: 20, y: 70, size: 30, color: '#4338ca', rotation: Math.PI, rotSpeed: -0.0006, arms: 2, opacity: 0.4 }
+    ] : isNebula ? [
+      { x: 70, y: 30, size: 40, color: '#ec4899', rotation: 0, rotSpeed: 0.001, arms: 4, opacity: 0.5 }
+    ] : [];
+
+    // Gravitational lensing particles for Deep Space
+    const lensingParticles = isDeepSpace ? Array.from({ length: 20 }).map(() => ({
+      angle: Math.random() * Math.PI * 2,
+      radius: Math.random() * 100 + 200,
+      speed: Math.random() * 0.002 + 0.001,
+      size: Math.random() * 2 + 1
+    })) : [];
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    const drawGalaxy = (g: any, time: number) => {
+      const centerX = (g.x / 100) * canvas.width + mousePos.current.x * 0.5;
+      const centerY = (g.y / 100) * canvas.height + mousePos.current.y * 0.5;
+      const radius = (g.size / 100) * Math.max(canvas.width, canvas.height);
+      
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(g.rotation + time * g.rotSpeed);
+      
+      // Core
+      const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 0.25);
+      coreGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      coreGradient.addColorStop(0.4, g.color + '99');
+      coreGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = coreGradient;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Arms
+      ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < g.arms; i++) {
+        const armAngle = (i / g.arms) * Math.PI * 2;
+        for (let j = 0; j < 150; j++) {
+          const t = j / 150;
+          const r = t * radius;
+          const angle = armAngle + t * Math.PI * 3;
+          const x = Math.cos(angle) * r;
+          const y = Math.sin(angle) * r;
+          
+          const size = (1 - t) * 20 + 1;
+          const opacity = (1 - t) * g.opacity;
+          
+          // Add some noise to arm particles
+          const nx = x + (Math.random() - 0.5) * 10;
+          const ny = y + (Math.random() - 0.5) * 10;
+          
+          ctx.fillStyle = g.color + Math.floor(opacity * 255).toString(16).padStart(2, '0');
+          ctx.beginPath();
+          ctx.arc(nx, ny, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    };
+
+    const drawLensing = (time: number) => {
+      const centerX = canvas.width / 2 + mousePos.current.x;
+      const centerY = canvas.height / 2 + mousePos.current.y;
+      
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.globalCompositeOperation = 'screen';
+      
+      lensingParticles.forEach(p => {
+        p.angle += p.speed;
+        const x = Math.cos(p.angle) * p.radius;
+        const y = Math.sin(p.angle) * p.radius;
+        
+        // Stretch particle towards center to simulate lensing
+        const stretch = 1.5;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(x, y, p.size * stretch, p.size, p.angle, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    };
+
+    const render = (time: number) => {
+      timeRef.current = time;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw Nebula Blobs
+      ctx.globalCompositeOperation = 'screen';
+      blobs.forEach(blob => {
+        if (!reduceMotion) {
+          blob.x += blob.vx;
+          blob.y += blob.vy;
+          if (blob.x < -20) blob.x = 120;
+          if (blob.x > 120) blob.x = -20;
+          if (blob.y < -20) blob.y = 120;
+          if (blob.y > 120) blob.y = -20;
+        }
+
+        const x = (blob.x / 100) * canvas.width + mousePos.current.x * 0.2;
+        const y = (blob.y / 100) * canvas.height + mousePos.current.y * 0.2;
+        const size = (blob.size / 100) * Math.max(canvas.width, canvas.height) * (1 + Math.sin(time * blob.pulseSpeed + blob.phase) * 0.15);
+        
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+        gradient.addColorStop(0, blob.color);
+        gradient.addColorStop(0.5, blob.color.replace('0.15', '0.05').replace('0.1', '0.02'));
+        gradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Galaxies
+      galaxies.forEach(g => drawGalaxy(g, time));
+      
+      // Draw Lensing if Deep Space
+      if (isDeepSpace) drawLensing(time);
+
+      if (!reduceMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    if (!reduceMotion) {
+      animationFrameId = requestAnimationFrame(render);
+    } else {
+      render(0);
+    }
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [theme, reduceMotion]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />;
+};
+
+const BlackHole = () => {
+  return (
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none z-0 mix-blend-screen">
+      {/* Accretion Disk */}
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-[-40%] rounded-full border-[4px] border-double border-purple-400/20 opacity-30"
-        style={{ transform: 'rotateX(70deg) rotateY(10deg)' }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-0 rounded-full blur-xl opacity-80"
+        style={{
+          background: 'conic-gradient(from 0deg, transparent, rgba(139, 92, 246, 0.6), transparent, rgba(236, 72, 153, 0.6), transparent)',
+          transform: 'scale(1.8) rotateX(75deg)'
+        }}
       />
-      
       <motion.div
         animate={{ rotate: -360 }}
-        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-[-60%] rounded-full border-[1px] border-dashed border-blue-400/10 opacity-20"
-        style={{ transform: 'rotateX(80deg) rotateY(-15deg)' }}
+        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-10 rounded-full blur-md opacity-60 mix-blend-overlay"
+        style={{
+          background: 'conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.8), transparent, rgba(139, 92, 246, 0.8), transparent)',
+          transform: 'scale(1.5) rotateX(70deg)'
+        }}
       />
+      {/* Event Horizon */}
+      <div className="absolute inset-32 bg-black rounded-full shadow-[0_0_150px_rgba(139,92,246,0.8),inset_0_0_50px_rgba(0,0,0,1)] z-10" />
+      {/* Distortion Ring */}
+      <div className="absolute inset-[100px] rounded-full border-[2px] border-white/20 blur-[2px] z-20" />
+      <div className="absolute inset-[110px] rounded-full border-[1px] border-purple-500/30 blur-[1px] z-20" />
+    </div>
+  );
+};
 
-      {/* The Singularity */}
-      <motion.div 
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
-        className="w-40 h-40 bg-black rounded-full shadow-[0_0_100px_rgba(168,85,247,0.9),inset_0_0_60px_rgba(0,0,0,1)] z-10 relative"
-      >
-        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.1)_0%,_transparent_70%)]" />
-      </motion.div>
-      
-      {/* Gravitational Lensing / Distortion Rings */}
-      {[1, 2, 3, 4].map(i => (
+const CosmicRays = () => {
+  return (
+    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-30 mix-blend-screen">
+      {[1, 2, 3, 4, 5].map((_, i) => (
         <motion.div
           key={i}
-          animate={{ scale: [0.8, 2.5], opacity: [0.4, 0], borderWidth: ['2px', '0px'] }}
-          transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.6, ease: "easeOut" }}
-          className="absolute inset-0 rounded-full border border-purple-500/30"
+          initial={{ x: '-100%', y: `${i * 20}%`, rotate: -45, opacity: 0 }}
+          animate={{ 
+            x: '200%', 
+            y: `${i * 20 + 30}%`,
+            opacity: [0, 0.8, 0]
+          }}
+          transition={{ 
+            duration: 10 + i * 3, 
+            repeat: Infinity, 
+            ease: "linear",
+            delay: i * 2
+          }}
+          className="absolute w-[200%] h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent blur-[2px]"
         />
       ))}
+    </div>
+  );
+};
 
-      {/* Sucking Particles */}
-      {Array.from({ length: 40 }).map((_, i) => (
+const Planet = ({ color = '#1e293b', size = '200px', position = { top: '20%', left: '10%' } as React.CSSProperties }) => {
+  return (
+    <motion.div
+      initial={{ ...position, opacity: 0 } as any}
+      animate={{ 
+        opacity: 0.6,
+        x: [0, 15, 0],
+        y: [0, -15, 0],
+        rotate: [0, 5, 0]
+      }}
+      transition={{ duration: 60, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute rounded-full z-0 pointer-events-none mix-blend-screen"
+      style={{ 
+        width: size, 
+        height: size,
+        ...position,
+        background: `radial-gradient(circle at 30% 30%, ${color} 0%, #000 80%)`,
+        boxShadow: `inset -30px -30px 60px rgba(0,0,0,0.9), 0 0 80px ${color}40, inset 10px 10px 30px rgba(255,255,255,0.1)`
+      }}
+    >
+      {/* Atmosphere Glow */}
+      <div className="absolute inset-[-10px] rounded-full border border-white/10 blur-[4px]" />
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/5 to-transparent mix-blend-overlay" />
+    </motion.div>
+  );
+};
+
+const Galaxy = ({ color = '#818cf8', size = '80vw', position = { top: '-10%', right: '-10%' } as React.CSSProperties }) => {
+  return (
+    <div 
+      className="absolute pointer-events-none z-0"
+      style={{ 
+        width: size, 
+        height: size, 
+        ...position,
+        perspective: '1000px'
+      }}
+    >
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 400, repeat: Infinity, ease: "linear" }}
+        className="relative w-full h-full flex items-center justify-center"
+        style={{
+          maskImage: 'radial-gradient(circle, black 0%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(circle, black 0%, transparent 70%)'
+        }}
+      >
+        {/* Core Glow */}
+        <div 
+          className="absolute w-1/3 h-1/3 rounded-full opacity-80 blur-2xl"
+          style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)` }}
+        />
+        <div 
+          className="absolute w-1/6 h-1/6 rounded-full bg-white opacity-90 blur-xl"
+        />
+
+        {/* Spiral Arms - Layer 1 */}
+        <motion.div 
+          animate={{ rotate: -360 }}
+          transition={{ duration: 600, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 opacity-50 rounded-full blur-3xl"
+          style={{
+            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${color} 45deg, transparent 90deg, ${color} 180deg, transparent 225deg, ${color} 270deg, transparent 360deg)`,
+            transform: 'scale(1.2) rotateX(60deg)'
+          }}
+        />
+
+        {/* Spiral Arms - Layer 2 */}
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 800, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 opacity-30 rounded-full blur-2xl"
+          style={{
+            background: `conic-gradient(from 45deg at 50% 50%, transparent 0deg, ${color} 90deg, transparent 180deg, ${color} 270deg, transparent 360deg)`,
+            transform: 'scale(1.5) rotateX(-45deg)'
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+};
+
+const CosmicDust = ({ count = 100, speed = 1, reduceMotion = false }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    
+    // Initialize particles
+    const particles = Array.from({ length: reduceMotion ? Math.floor(count / 3) : count }).map(() => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 0.5,
+      vx: (Math.random() - 0.5) * 0.05 * speed,
+      vy: (Math.random() - 0.5) * 0.05 * speed,
+      opacity: Math.random() * 0.5 + 0.1,
+      pulseSpeed: Math.random() * 0.02 + 0.01,
+      pulsePhase: Math.random() * Math.PI * 2
+    }));
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (reduceMotion) render(0);
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    const render = (time: number) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(p => {
+        // Update position
+        if (!reduceMotion) {
+          p.x += p.vx;
+          p.y += p.vy;
+          
+          // Wrap around screen
+          if (p.x < 0) p.x = 100;
+          if (p.x > 100) p.x = 0;
+          if (p.y < 0) p.y = 100;
+          if (p.y > 100) p.y = 0;
+        }
+
+        const x = (p.x / 100) * canvas.width;
+        const y = (p.y / 100) * canvas.height;
+        
+        // Pulsing opacity
+        const currentOpacity = reduceMotion ? p.opacity : p.opacity + Math.sin(time * p.pulseSpeed + p.pulsePhase) * 0.2;
+        const finalOpacity = Math.max(0.05, Math.min(0.8, currentOpacity));
+
+        ctx.beginPath();
+        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${finalOpacity})`;
+        ctx.fill();
+        
+        // Subtle glow
+        if (p.size > 1.5) {
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = `rgba(255, 255, 255, ${finalOpacity * 0.5})`;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+      });
+
+      if (!reduceMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    if (!reduceMotion) {
+      animationFrameId = requestAnimationFrame(render);
+    } else {
+      render(0);
+    }
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [count, speed, reduceMotion]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-60 mix-blend-screen" />;
+};
+
+const StarField = ({ count = 100, color = '#ffffff', speed = 1, reduceMotion = false }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mousePos = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePos.current = {
+        x: (e.clientX / window.innerWidth - 0.5) * 30,
+        y: (e.clientY / window.innerHeight - 0.5) * 30
+      };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    // Add color variation to stars
+    const starColors = [color, '#93c5fd', '#fbcfe8', '#fde047'];
+    
+    const stars = Array.from({ length: reduceMotion ? Math.floor(count / 2) : count }).map(() => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 1.5 + 0.2,
+      baseOpacity: Math.random() * 0.6 + 0.1,
+      parallax: Math.random() * 0.8 + 0.1,
+      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      twinklePhase: Math.random() * Math.PI * 2,
+      color: starColors[Math.floor(Math.random() * starColors.length)]
+    }));
+
+    // Shooting stars
+    const shootingStars = Array.from({ length: 2 }).map(() => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      active: false,
+      speed: Math.random() * 2 + 1,
+      angle: Math.random() * Math.PI / 4 + Math.PI / 4,
+      length: Math.random() * 100 + 50,
+      timer: Math.random() * 500
+    }));
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (reduceMotion) render(0);
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    const render = (time: number) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      stars.forEach(star => {
+        const x = ((star.x + mousePos.current.x * star.parallax + 100) % 100) * canvas.width / 100;
+        const y = ((star.y + mousePos.current.y * star.parallax + 100) % 100) * canvas.height / 100;
+        
+        // Twinkle effect
+        const currentOpacity = reduceMotion ? star.baseOpacity : 
+          star.baseOpacity + Math.sin(time * star.twinkleSpeed + star.twinklePhase) * 0.3;
+        
+        const clampedOpacity = Math.max(0, Math.min(1, currentOpacity));
+        
+        ctx.beginPath();
+        ctx.arc(x, y, star.size, 0, Math.PI * 2);
+        
+        // Use the star's specific color
+        const isHex = star.color.startsWith('#');
+        if (isHex && star.color.length === 7) {
+            ctx.fillStyle = `${star.color}${Math.floor(clampedOpacity * 255).toString(16).padStart(2, '0')}`;
+        } else {
+            ctx.fillStyle = `rgba(255, 255, 255, ${clampedOpacity})`;
+        }
+        
+        ctx.fill();
+        
+        // Add subtle glow to larger stars
+        if (star.size > 1.2) {
+          ctx.beginPath();
+          ctx.arc(x, y, star.size * 2.5, 0, Math.PI * 2);
+          if (isHex && star.color.length === 7) {
+             ctx.fillStyle = `${star.color}${Math.floor(clampedOpacity * 50).toString(16).padStart(2, '0')}`;
+          } else {
+             ctx.fillStyle = `rgba(255, 255, 255, ${clampedOpacity * 0.2})`;
+          }
+          ctx.fill();
+        }
+      });
+
+      // Draw shooting stars
+      if (!reduceMotion) {
+        shootingStars.forEach(s => {
+          if (!s.active) {
+            s.timer--;
+            if (s.timer <= 0) {
+              s.active = true;
+              s.x = Math.random() * 100;
+              s.y = Math.random() * 50;
+              s.timer = Math.random() * 1000 + 500;
+            }
+          } else {
+            const startX = (s.x / 100) * canvas.width;
+            const startY = (s.y / 100) * canvas.height;
+            
+            s.x += Math.cos(s.angle) * s.speed;
+            s.y += Math.sin(s.angle) * s.speed;
+            
+            const endX = (s.x / 100) * canvas.width;
+            const endY = (s.y / 100) * canvas.height;
+            
+            const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+            gradient.addColorStop(0, 'transparent');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.8)');
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+            
+            if (s.x > 110 || s.y > 110) {
+              s.active = false;
+            }
+          }
+        });
+      }
+
+      if (!reduceMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+    
+    if (!reduceMotion) {
+      animationFrameId = requestAnimationFrame(render);
+    } else {
+      render(0); // Single frame for reduced motion
+    }
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [count, color, speed, reduceMotion]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />;
+};
+
+const NebulaField = ({ colors = ['#4c0519', '#2d0630', '#050414'] }) => {
+  // Create multiple overlapping, slow-moving blobs for a volumetric gas effect
+  const blobs = useMemo(() => Array.from({ length: 4 }).map((_, i) => ({
+    id: i,
+    color: colors[i % colors.length],
+    size: Math.random() * 40 + 60, // 60vw to 100vw
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    duration: Math.random() * 30 + 40,
+    delay: Math.random() * -40
+  })), [colors]);
+
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+      {blobs.map(blob => (
         <motion.div
-          key={`sp-${i}`}
-          initial={{ x: (Math.random() - 0.5) * 1000, y: (Math.random() - 0.5) * 1000, opacity: 0, scale: 2 }}
-          animate={{ x: 0, y: 0, opacity: [0, 1, 0], scale: [2, 0.1] }}
-          transition={{ duration: 1.5 + Math.random(), repeat: Infinity, delay: Math.random() * 2, ease: "circIn" }}
-          className="absolute w-1 h-1 bg-white rounded-full"
+          key={blob.id}
+          animate={{ 
+            x: [`${blob.x - 10}vw`, `${blob.x + 10}vw`, `${blob.x - 10}vw`],
+            y: [`${blob.y - 10}vh`, `${blob.y + 10}vh`, `${blob.y - 10}vh`],
+            scale: [1, 1.2, 1],
+            opacity: [0.2, 0.4, 0.2]
+          }}
+          transition={{ duration: blob.duration, delay: blob.delay, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute rounded-full blur-[100px] mix-blend-screen"
+          style={{
+            width: `${blob.size}vw`,
+            height: `${blob.size}vw`,
+            left: '-20vw', // Offset to allow moving off-screen
+            top: '-20vh',
+            background: `radial-gradient(circle, ${blob.color} 0%, transparent 70%)`
+          }}
         />
       ))}
-    </motion.div>
-  </div>
-);
+    </div>
+  );
+};
+
+const GridField = ({ color = '#22c55e' }) => {
+  return (
+    <div className="absolute inset-0 z-0 opacity-20 overflow-hidden" style={{ perspective: '1000px' }}>
+      <div 
+        className="absolute inset-[-100%] w-[300%] h-[300%]" 
+        style={{ 
+          backgroundImage: `linear-gradient(${color} 1px, transparent 1px), linear-gradient(90deg, ${color} 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+          backgroundPosition: 'center center',
+          transform: 'rotateX(60deg)',
+          transformOrigin: 'center center',
+          maskImage: 'radial-gradient(circle at center, black, transparent 80%)'
+        }} 
+      />
+    </div>
+  );
+};
+
+const AuroraField = () => {
+  return (
+    <div className="absolute inset-0 z-0 opacity-30">
+      <motion.div
+        animate={{ 
+          x: ['-20%', '20%', '-20%'],
+          rotate: [0, 5, 0],
+          scaleY: [1, 1.2, 1]
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[-20%] left-[-20%] w-[140%] h-[100%] bg-gradient-to-b from-teal-500/40 via-emerald-500/20 to-transparent"
+        style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }}
+      />
+      <motion.div
+        animate={{ 
+          x: ['20%', '-20%', '20%'],
+          rotate: [0, -5, 0],
+          scaleY: [1.1, 0.9, 1.1]
+        }}
+        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[-10%] left-[-10%] w-[120%] h-[80%] bg-gradient-to-b from-blue-500/30 via-purple-500/10 to-transparent"
+        style={{ borderRadius: '60% 40% 30% 70% / 50% 60% 40% 50%' }}
+      />
+    </div>
+  );
+};
+
+const ThemePreview = ({ theme }: { theme: Theme }) => {
+  const colors = ({
+    stardust: ['#0f172a', '#1e293b', '#000000', '#334155'],
+    retroGrid: ['#064e3b', '#065f46', '#000000', '#047857'],
+    auroraBorealis: ['#134e4a', '#0f766e', '#010409', '#115e59'],
+    sereneLandscape: ['#1c1917', '#292524', '#0a0a0a', '#44403c'],
+    obsidian: ['#171717', '#262626', '#000000', '#404040'],
+    nebula: ['#4c0519', '#831843', '#05000a', '#9d174d'],
+    liquidGlass: ['#1e293b', '#0f172a', '#000000', '#334155'],
+    cinematicNoir: ['#18181b', '#09090b', '#000000', '#27272a'],
+    auroraGlow: ['#064e3b', '#065f46', '#010208', '#047857'],
+    minimalLuxury: ['#1c1917', '#0c0a09', '#050505', '#292524'],
+    futuristicEditorial: ['#7c2d12', '#431407', '#000000', '#9a3412'],
+    softHolographic: ['#4c0519', '#2d0630', '#050414', '#701a75'],
+    deepSpace: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
+    void: ['#2e1065', '#1e1b4b', '#030008', '#4c1d95'],
+    midnight: ['#172554', '#1e3a8a', '#00040a', '#1e40af'],
+    crimson: ['#450a0a', '#7f1d1d', '#0a0202', '#991b1b'],
+    ethereal: ['#0f172a', '#1e293b', '#010208', '#334155'],
+    abyss: ['#09090b', '#18181b', '#020202', '#27272a'],
+  } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <div 
+        className="absolute inset-0 opacity-60"
+        style={{ 
+          background: `radial-gradient(circle at 30% 30%, ${colors[0]} 0%, transparent 70%),
+                       radial-gradient(circle at 70% 70%, ${colors[1]} 0%, transparent 70%),
+                       ${colors[2]}`
+        }}
+      />
+    </div>
+  );
+};
+
+const ThemePreviewCard = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
+  const config = THEMES[theme] || THEMES.stardust;
+  return (
+    <div className="relative w-full h-40 rounded-[32px] overflow-hidden border border-white/10 group shadow-2xl bg-black">
+      <ThemePreview theme={theme} />
+      
+      {/* Content Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-8">
+        <div className="flex items-end justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h4 className="text-2xl font-light tracking-tight text-white serif">
+                {config.name}
+              </h4>
+              {config.isPro && (
+                <div className="px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold">
+              Atmosphere Preview
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-end gap-3">
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 border border-white/10 transition-transform duration-500 group-hover:scale-110",
+              config.text
+            )}>
+              {config.icon}
+            </div>
+            
+            {/* Swatch */}
+            <div className="flex gap-1.5 p-1.5 rounded-full bg-black/60 border border-white/5">
+              {['bg-white', 'bg-indigo-500', 'bg-emerald-500', 'bg-orange-500', 'bg-rose-500', 'bg-purple-500'].map((c, i) => {
+                const colorName = c.replace('bg-', '').split('-')[0];
+                // Map some similar colors
+                const isMatch = config.accent === colorName || 
+                               (config.accent === 'slate' && colorName === 'white') ||
+                               (config.accent === 'zinc' && colorName === 'white') ||
+                               (config.accent === 'stone' && colorName === 'white') ||
+                               (config.accent === 'teal' && colorName === 'emerald') ||
+                               (config.accent === 'fuchsia' && colorName === 'purple') ||
+                               (config.accent === 'pink' && colorName === 'rose') ||
+                               (config.accent === 'red' && colorName === 'rose');
+                
+                return (
+                  <div 
+                    key={i} 
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-all duration-500",
+                      c,
+                      isMatch ? "scale-125 ring-2 ring-white/40 opacity-100" : "opacity-20 scale-75"
+                    )} 
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Animated Scanline */}
+      {!reduceMotion && (
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[10%] w-full top-[-10%] animate-scanline pointer-events-none" />
+      )}
+    </div>
+  );
+};
+
+const AmbientBackground = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
+  const colors = ({
+    stardust: ['#0f172a', '#1e293b', '#000000', '#334155'],
+    retroGrid: ['#064e3b', '#065f46', '#000000', '#047857'],
+    auroraBorealis: ['#134e4a', '#0f766e', '#010409', '#115e59'],
+    sereneLandscape: ['#1c1917', '#292524', '#0a0a0a', '#44403c'],
+    obsidian: ['#171717', '#262626', '#000000', '#404040'],
+    nebula: ['#4c0519', '#831843', '#05000a', '#9d174d'],
+    liquidGlass: ['#1e293b', '#0f172a', '#000000', '#334155'],
+    cinematicNoir: ['#18181b', '#09090b', '#000000', '#27272a'],
+    auroraGlow: ['#064e3b', '#065f46', '#010208', '#047857'],
+    minimalLuxury: ['#1c1917', '#0c0a09', '#050505', '#292524'],
+    futuristicEditorial: ['#7c2d12', '#431407', '#000000', '#9a3412'],
+    softHolographic: ['#4c0519', '#2d0630', '#050414', '#701a75'],
+    deepSpace: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
+    void: ['#2e1065', '#1e1b4b', '#030008', '#4c1d95'],
+    midnight: ['#172554', '#1e3a8a', '#00040a', '#1e40af'],
+    crimson: ['#450a0a', '#7f1d1d', '#0a0202', '#991b1b'],
+    ethereal: ['#0f172a', '#1e293b', '#010208', '#334155'],
+    abyss: ['#09090b', '#18181b', '#020202', '#27272a'],
+  } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
+
+  const blendMode = '';
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 transition-colors duration-1000" style={{ transform: 'translateZ(0)' }}>
+      {/* Background Image for Serene Landscape */}
+      {theme === 'sereneLandscape' && (
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000" 
+            alt="Landscape" 
+            className="w-full h-full object-cover opacity-20 grayscale"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+        </div>
+      )}
+
+      {/* Specialized Fields */}
+      {(theme === 'stardust' || theme === 'deepSpace' || theme === 'nebula' || theme === 'void' || theme === 'midnight' || theme === 'ethereal') && (
+        <StarField 
+          count={theme === 'stardust' ? 400 : 200} 
+          color={
+            theme === 'stardust' ? '#ffffff' : 
+            theme === 'deepSpace' ? '#a5b4fc' : 
+            theme === 'nebula' ? '#fbcfe8' :
+            theme === 'midnight' ? '#93c5fd' :
+            '#ffffff'
+          } 
+          speed={theme === 'stardust' ? 1.5 : 1}
+          reduceMotion={reduceMotion}
+        />
+      )}
+      
+      {(theme === 'deepSpace' || theme === 'nebula' || theme === 'void' || theme === 'softHolographic') && (
+        <CosmicCanvas theme={theme} reduceMotion={reduceMotion} />
+      )}
+      
+      {(theme === 'deepSpace' || theme === 'nebula' || theme === 'void') && !reduceMotion && <CosmicDust />}
+      {(theme === 'deepSpace' || theme === 'stardust') && !reduceMotion && <CosmicRays />}
+      {theme === 'void' && <BlackHole />}
+      
+      {theme === 'deepSpace' && (
+        <>
+          <Planet color="#312e81" size="300px" position={{ top: '15%', left: '5%' }} />
+        </>
+      )}
+      
+      {theme === 'nebula' && (
+        <>
+          <Planet color="#4c0519" size="250px" position={{ bottom: '20%', right: '10%' }} />
+        </>
+      )}
+      
+      {theme === 'retroGrid' && <GridField color="#10b981" />}
+      {(theme === 'auroraBorealis' || theme === 'auroraGlow') && <AuroraField />}
+
+      {/* Dynamic Mesh Gradient Orbs */}
+      <motion.div
+        className={cn("absolute top-0 left-0 w-[120vw] h-[120vh] rounded-full opacity-40 will-change-transform", blendMode)}
+        style={{ background: `radial-gradient(circle, ${colors[0]} 0%, transparent 60%)`, x: '-10%', y: '-10%' }}
+        animate={reduceMotion ? {} : { x: ['-10%', '10%', '-20%', '-10%'], y: ['-10%', '20%', '0%', '-10%'], scale: [1, 1.2, 0.9, 1] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cn("absolute bottom-0 right-0 w-[100vw] h-[100vh] rounded-full opacity-40 will-change-transform", blendMode)}
+        style={{ background: `radial-gradient(circle, ${colors[1]} 0%, transparent 60%)`, x: '10%', y: '10%' }}
+        animate={reduceMotion ? {} : { x: ['10%', '-10%', '20%', '10%'], y: ['10%', '-20%', '10%', '10%'], scale: [0.9, 1.3, 1, 0.9] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cn("absolute top-1/2 left-1/2 w-[140vw] h-[140vh] rounded-full opacity-30 will-change-transform", blendMode)}
+        style={{ background: `radial-gradient(circle, ${colors[3]} 0%, transparent 50%)`, x: '-50%', y: '-50%' }}
+        animate={reduceMotion ? {} : { x: ['-50%', '-30%', '-70%', '-50%'], y: ['-50%', '-70%', '-30%', '-50%'], scale: [1, 0.8, 1.2, 1] }}
+        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+      />
+      
+      {/* High contrast noise overlay for texture */}
+      <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+    </div>
+  );
+};
+
+const PayPalSubscriptionButton = ({ onApprove }: { onApprove: (subscriptionID: string) => void }) => {
+  const containerId = "paypal-button-container-P-6PH880156W850713XNG3VZCQ";
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    // @ts-ignore
+    if (window.paypal) {
+      setSdkLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = "https://www.paypal.com/sdk/js?client-id=AS_rR6gcZNzw2Hz3-0-mes4v32ijNjUEdGP9SrD5Od3uSzY-6iXYD0Mk-XByrIBByt8SJucKo0Bu-XRz&vault=true&intent=subscription";
+    script.async = true;
+    script.onload = () => setSdkLoaded(true);
+    script.onerror = () => setLoadError(true);
+    document.head.appendChild(script);
+
+    return () => {
+      // We don't necessarily want to remove the script on unmount as it might be needed again
+      // but we could if we wanted to be strict.
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!sdkLoaded) return;
+
+    const container = document.getElementById(containerId);
+    if (container) container.innerHTML = "";
+
+    // @ts-ignore
+    if (window.paypal) {
+      try {
+        // @ts-ignore
+        window.paypal.Buttons({
+          style: {
+            shape: 'pill',
+            color: 'black',
+            layout: 'vertical',
+            label: 'subscribe'
+          },
+          createSubscription: function(data: any, actions: any) {
+            return actions.subscription.create({
+              plan_id: 'P-6PH880156W850713XNG3VZCQ'
+            });
+          },
+          onApprove: function(data: any, actions: any) {
+            onApprove(data.subscriptionID);
+          },
+          onError: function(err: any) {
+            console.error("PayPal Error:", err);
+          }
+        }).render(`#${containerId}`).catch((err: any) => {
+          console.error("PayPal Render Error:", err);
+        });
+      } catch (err) {
+        console.error("PayPal Initialization Error:", err);
+      }
+    }
+
+    return () => {
+      if (container) container.innerHTML = "";
+    };
+  }, [sdkLoaded, onApprove]);
+
+  if (loadError) {
+    return (
+      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+        <p className="text-xs text-red-400">Failed to load payment system. Please check your connection or disable ad-blockers.</p>
+      </div>
+    );
+  }
+
+  if (!sdkLoaded) {
+    return (
+      <div className="h-12 w-full bg-white/5 animate-pulse rounded-full flex items-center justify-center">
+        <span className="text-[10px] text-white/20 uppercase tracking-widest">Loading Payments...</span>
+      </div>
+    );
+  }
+
+  return <div id={containerId} className="w-full" />;
+};
 
 const containerVariants: any = {
-  idle: { y: [0, -8, 0], transition: { duration: 6, repeat: Infinity, ease: "easeInOut" } },
-  shatter: { x: [0, -15, 15, -20, 20, -10, 10, 0], y: [0, 5, -5, 8, -8, 0], scale: [1, 1.1, 0.8, 1.2, 0], opacity: [1, 1, 0.9, 0], transition: { duration: 0.6, ease: "easeInOut" } },
-  implode: { scale: [1, 0.9, 0.7, 0.2, 0], rotate: [0, -5, 10, -25, 90], opacity: [1, 1, 0.8, 0], transition: { duration: 1.0, ease: "anticipate" } },
-  ascend: { y: [0, -20, -80, -200], scale: [1, 1.05, 1.1, 1.2], opacity: [1, 0.8, 0.2, 0], transition: { duration: 1.2, ease: "easeOut" } },
-  supernova: { scale: [1, 0.95, 1.5, 3], opacity: [1, 1, 1, 0], transition: { duration: 0.8, ease: "easeIn" } },
-  pulse: { scale: [1, 0.8, 1.1, 0.9, 1.2, 0], opacity: [1, 1, 1, 0.8, 0], transition: { duration: 0.9, ease: "easeInOut" } },
-  dissolve: { scale: [1, 0.95], opacity: [1, 0], filter: ['blur(0px)', 'blur(20px)'], transition: { duration: 1.5 } },
-  evaporate: { y: [0, -50], scale: [1, 1.1], opacity: [1, 0], filter: ['blur(0px)', 'blur(15px)'], transition: { duration: 1.2 } },
-  fallaway: { y: [0, 20, 300], scale: [1, 1.05, 0.8], opacity: [1, 1, 0], rotate: [0, 5, 15], transition: { duration: 0.8, ease: "easeIn" } },
-  breeze: { x: [0, 20, 300], y: [0, -10, -50], opacity: [1, 1, 0], rotate: [0, 5, 20], transition: { duration: 1.2 } },
-  burn: { scale: [1, 1.1, 0.9, 0], opacity: [1, 1, 0.8, 0], filter: ['brightness(1)', 'brightness(2)', 'brightness(0)'], transition: { duration: 1.0 } },
-  fracture: { skewX: [0, -20, 40], scale: [1, 1.1, 0], opacity: [1, 1, 0], transition: { duration: 0.5 } },
-  float: { y: [0, -10, -20], x: [0, 10, -10], scale: [1, 0.9], opacity: [1, 0], transition: { duration: 2.0 } },
-  echo: { scale: [1, 1.1, 0.9, 1.2, 0.8, 1.3, 0], opacity: [1, 0.8, 0.6, 0.4, 0.2, 0], transition: { duration: 1.5 } },
-  cleanse: { y: [0, 50, 100], scale: [1, 0.9, 0.8], opacity: [1, 0.5, 0], filter: ['blur(0px)', 'blur(10px)'], transition: { duration: 1.2 } },
-  warp: { scaleX: [1, 1.5, 2, 0], scaleY: [1, 0.5, 0.2, 0], opacity: [1, 1, 0.5, 0], transition: { duration: 0.7 } },
-  ripple: { scale: [1, 1.05, 0.95, 1.1, 0], opacity: [1, 0.8, 0.6, 0], transition: { duration: 1.2 } },
-  shred: { scaleY: [1, 2, 3, 0], scaleX: [1, 0.5, 0.2, 0], opacity: [1, 1, 0], transition: { duration: 0.6 } },
-  burst: { scale: [1, 1.5, 0], opacity: [1, 1, 0], transition: { duration: 0.4 } },
-  neonFade: { scale: [1, 1.05, 0.95], opacity: [1, 1, 0], filter: ['drop-shadow(0 0 0px #a855f7)', 'drop-shadow(0 0 50px #a855f7)', 'drop-shadow(0 0 0px #a855f7)'], transition: { duration: 1.5 } },
-  glitch: { x: [0, -10, 10, -5, 5, 0], skewX: [0, -20, 20, -10, 10, 0], opacity: [1, 0.8, 1, 0.5, 1, 0], filter: ['hue-rotate(0deg)', 'hue-rotate(90deg)', 'hue-rotate(-90deg)', 'hue-rotate(0deg)'], transition: { duration: 0.5 } },
-  blackhole: { 
-    rotateX: [0, 20, 45, 90],
-    rotateY: [0, -10, -30, -60],
-    z: [0, -200, -800, -2000],
-    scale: [1, 0.8, 0.4, 0],
-    opacity: [1, 1, 0.8, 0],
-    transition: { duration: 3, ease: [0.32, 0, 0.67, 0] }
-  },
-  ascendLight: { y: [0, -50, -150], opacity: [1, 0.8, 0], filter: ['brightness(1)', 'brightness(2)', 'brightness(3)'], transition: { duration: 1.5, ease: "easeOut" } },
-  shatterGlass: { scale: [1, 1.2, 0], opacity: [1, 1, 0], rotate: [0, 15, -15], transition: { duration: 0.4 } },
-  ethereal: { scale: [1, 1.1], opacity: [1, 0], filter: ['blur(0px)', 'blur(20px)'], transition: { duration: 2, ease: "easeOut" } },
-  oblivion: { scale: [1, 0.95, 0], opacity: [1, 0.8, 0], transition: { duration: 1.5, ease: "easeIn" } },
-  whisper: { x: [0, 10], opacity: [1, 0], transition: { duration: 2.5, ease: "linear" } },
-  submerge: { y: [0, 20], opacity: [1, 0], transition: { duration: 1.8, ease: "easeIn" } },
-  mist: { opacity: [1, 0], filter: ['blur(0px)', 'blur(40px)'], scale: [1, 1.05], transition: { duration: 2.2 } },
-  fadeAway: { opacity: [1, 0], transition: { duration: 3, ease: "easeInOut" } }
-};
-
-const textVariants: any = {
-  idle: { opacity: 1, letterSpacing: 'normal' },
-  shatter: { opacity: [1, 0], transition: { duration: 0.3 } },
-  implode: { opacity: [1, 0], scale: [1, 0.5], transition: { duration: 0.6 } },
-  ascend: { opacity: [1, 0], letterSpacing: ['normal', '10px', '30px'], transition: { duration: 1.0, ease: "easeOut" } },
-  supernova: { opacity: [1, 0], filter: ['brightness(1)', 'brightness(10)'], transition: { duration: 0.4 } },
-  pulse: { opacity: [1, 0.5, 1, 0], transition: { duration: 0.7 } },
-  dissolve: { opacity: [1, 0], filter: ['blur(0px)', 'blur(10px)'], transition: { duration: 1.0 } },
-  evaporate: { opacity: [1, 0], letterSpacing: ['normal', '15px'], transition: { duration: 1.0 } },
-  fallaway: { opacity: [1, 0], transition: { duration: 0.5 } },
-  breeze: { opacity: [1, 0], x: [0, 50], transition: { duration: 0.8 } },
-  burn: { opacity: [1, 0], filter: ['brightness(1)', 'brightness(3)', 'brightness(0)'], transition: { duration: 0.8 } },
-  fracture: { opacity: [1, 0], skewX: [0, 30], transition: { duration: 0.4 } },
-  float: { opacity: [1, 0], transition: { duration: 1.5 } },
-  echo: { opacity: [1, 0], transition: { duration: 1.2 } },
-  cleanse: { opacity: [1, 0], y: [0, 20], transition: { duration: 0.8 } },
-  warp: { opacity: [1, 0], scaleX: [1, 2], transition: { duration: 0.5 } },
-  ripple: { opacity: [1, 0], transition: { duration: 1.0 } },
-  shred: { opacity: [1, 0], scaleY: [1, 2], transition: { duration: 0.4 } },
-  burst: { opacity: [1, 0], scale: [1, 1.5], transition: { duration: 0.3 } },
-  neonFade: { opacity: [1, 0], filter: ['brightness(1)', 'brightness(2)', 'brightness(0)'], transition: { duration: 1.2 } },
-  glitch: { opacity: [1, 0], x: [0, 10, -10, 0], transition: { duration: 0.4 } },
-  blackhole: { opacity: [1, 0], transition: { duration: 0.5 } },
-  ascendLight: { opacity: [1, 0], y: [0, -20], filter: ['brightness(1)', 'brightness(3)'], transition: { duration: 1.0 } },
-  shatterGlass: { opacity: [1, 0], scale: [1, 1.5], transition: { duration: 0.3 } },
-  ethereal: { opacity: [1, 0], filter: ['blur(0px)', 'blur(10px)'], transition: { duration: 1.5 } },
-  oblivion: { opacity: [1, 0], scale: [1, 0.9], transition: { duration: 1.2 } },
-  whisper: { opacity: [1, 0], transition: { duration: 2.0 } },
-  submerge: { opacity: [1, 0], y: [0, 10], transition: { duration: 1.5 } },
-  mist: { opacity: [1, 0], filter: ['blur(0px)', 'blur(20px)'], transition: { duration: 1.8 } },
-  fadeAway: { opacity: [1, 0], transition: { duration: 2.5 } }
-};
-
-type ShockwaveConfig = { d: number; dur: number; c: string };
-type ProfileConfig = { p: () => void; pD: number; rD: number; f?: string; s?: ShockwaveConfig[] };
-
-const C = (opts: any) => confetti({ origin: { y: 0.5 }, zIndex: 1000, ...opts });
-const anims: Record<string, ProfileConfig> = {
-  shatter: { p: () => { C({ particleCount: 200, spread: 120, colors: ['#fff', '#d8b4fe'], startVelocity: 70, gravity: 1.2 }); C({ particleCount: 50, spread: 180, colors: ['#e4e4e7'], startVelocity: 90, shapes: ['square'] }); }, pD: 200, rD: 1200, f: 'bg-purple-200', s: [{d:0.2, dur:0.8, c:'border-white'}] },
-  implode: { p: () => setTimeout(() => C({ particleCount: 300, spread: 360, colors: ['#18181b', '#581c87', '#000'], startVelocity: 50, gravity: 0.1, ticks: 400 }), 500), pD: 0, rD: 1500 },
-  ascend: { p: () => { const e = Date.now()+1500; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 5, angle: 90, spread: 90, origin: {y:0.6}, colors: ['#f3e8ff', '#d8b4fe'], startVelocity: 25, gravity: -0.3 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1800 },
-  supernova: { p: () => C({ particleCount: 400, spread: 360, colors: ['#fff', '#e9d5ff'], startVelocity: 100, gravity: 0.5, scalar: 1.2 }), pD: 400, rD: 1200, f: 'bg-white', s: [{d:0.4, dur:1.2, c:'border-purple-300'}] },
-  pulse: { p: () => { C({ particleCount: 150, spread: 360, colors: ['#60a5fa', '#fff'], startVelocity: 60 }); setTimeout(() => C({ particleCount: 150, spread: 360, colors: ['#c084fc'], startVelocity: 80 }), 200); }, pD: 100, rD: 1200, s: [{d:0, dur:1, c:'border-blue-400'}, {d:0.2, dur:1, c:'border-purple-400'}, {d:0.4, dur:1, c:'border-white'}] },
-  dissolve: { p: () => C({ particleCount: 200, spread: 360, colors: ['#a1a1aa', '#71717a'], startVelocity: 30, gravity: 0.2, drift: 0.5, ticks: 300 }), pD: 200, rD: 1600 },
-  evaporate: { p: () => { const e = Date.now()+1000; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 8, angle: 90, spread: 45, colors: ['#e0e7ff', '#c7d2fe'], startVelocity: 40, gravity: -0.5 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1500 },
-  fallaway: { p: () => C({ particleCount: 150, angle: 270, spread: 60, colors: ['#3f3f46', '#27272a'], startVelocity: 60, gravity: 1.5 }), pD: 100, rD: 1000 },
-  breeze: { p: () => C({ particleCount: 200, angle: 0, spread: 45, colors: ['#f3f4f6', '#d1d5db'], startVelocity: 80, gravity: 0.1, drift: 1, ticks: 300 }), pD: 200, rD: 1400 },
-  burn: { p: () => { C({ particleCount: 250, spread: 360, colors: ['#f9a8d4', '#f472b6', '#fb7185'], startVelocity: 50, gravity: -0.1 }); C({ particleCount: 100, spread: 360, colors: ['#18181b'], startVelocity: 30, gravity: 0.5 }); }, pD: 300, rD: 1300, f: 'bg-pink-200', s: [{d:0.3, dur:0.8, c:'border-pink-400'}] },
-  fracture: { p: () => C({ particleCount: 150, spread: 180, colors: ['#fff', '#a855f7'], startVelocity: 90, gravity: 1.5, shapes: ['square'], scalar: 0.8 }), pD: 100, rD: 1000, s: [{d:0.1, dur:0.5, c:'border-white'}] },
-  float: { p: () => C({ particleCount: 100, spread: 360, colors: ['#ddd6fe', '#c4b5fd'], startVelocity: 20, gravity: 0, drift: 0.2, ticks: 500 }), pD: 200, rD: 2200 },
-  echo: { p: () => { [0, 300, 600].forEach(d => setTimeout(() => C({ particleCount: 50, spread: 360, colors: ['#a78bfa'], startVelocity: 40, gravity: 0.2 }), d)); }, pD: 0, rD: 1800, s: [{d:0, dur:1, c:'border-purple-300'}, {d:0.3, dur:1, c:'border-purple-400'}, {d:0.6, dur:1, c:'border-purple-500'}] },
-  cleanse: { p: () => { const e = Date.now()+800; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 15, angle: 270, spread: 90, colors: ['#93c5fd', '#60a5fa', '#3b82f6'], startVelocity: 50, gravity: 1.2 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1400, f: 'bg-blue-100' },
-  warp: { p: () => { C({ particleCount: 100, spread: 20, angle: 0, colors: ['#c084fc'], startVelocity: 120, gravity: 0 }); C({ particleCount: 100, spread: 20, angle: 180, colors: ['#c084fc'], startVelocity: 120, gravity: 0 }); }, pD: 200, rD: 1000, s: [{d:0.2, dur:0.6, c:'border-fuchsia-400'}] },
-  ripple: { p: () => C({ particleCount: 100, spread: 360, colors: ['#bfdbfe', '#e0e7ff'], startVelocity: 30, gravity: 0.1, ticks: 300 }), pD: 200, rD: 1500, s: [{d:0.2, dur:1.5, c:'border-blue-200'}] },
-  shred: { p: () => C({ particleCount: 150, angle: 270, spread: 20, colors: ['#d4d4d8', '#a1a1aa'], startVelocity: 100, gravity: 2, shapes: ['square'] }), pD: 100, rD: 900 },
-  burst: { p: () => C({ particleCount: 300, spread: 360, colors: ['#fff', '#f3e8ff', '#d8b4fe'], startVelocity: 120, gravity: 0.8 }), pD: 0, rD: 1000, f: 'bg-white', s: [{d:0, dur:0.5, c:'border-white'}] },
-  neonFade: { p: () => C({ particleCount: 150, spread: 360, colors: ['#a855f7', '#d8b4fe', '#fff'], startVelocity: 40, gravity: 0.1, ticks: 200 }), pD: 100, rD: 1600, f: 'bg-purple-500', s: [{d:0, dur:1.5, c:'border-purple-500'}] },
-  glitch: { p: () => { C({ particleCount: 100, spread: 180, colors: ['#ef4444', '#3b82f6', '#22c55e'], startVelocity: 80, gravity: 1, shapes: ['square'] }); setTimeout(() => C({ particleCount: 100, spread: 180, colors: ['#fff'], startVelocity: 100, gravity: 1 }), 100); }, pD: 0, rD: 800 },
-  blackhole: { p: () => { 
-    const e = Date.now() + 2500;
-    let last = 0;
-    const f = (now: number) => {
-      if(now - last > 50) {
-        C({ particleCount: 15, spread: 360, origin: { x: 0.5, y: 0.5 }, colors: ['#000', '#4c1d95', '#1e40af'], startVelocity: -40, gravity: 0, scalar: 0.7 });
-        last = now;
-      }
-      if (Date.now() < e) requestAnimationFrame(f);
-    };
-    requestAnimationFrame(f);
-  }, pD: 0, rD: 3500 },
-  ascendLight: { p: () => { const e = Date.now()+1200; let last = 0; const f = (now: number) => { if(now - last > 50) { C({ particleCount: 10, angle: 90, spread: 45, origin: {y: 0.8}, colors: ['#fff', '#fef08a', '#fde047'], startVelocity: 60, gravity: -0.2 }); last = now; } if(Date.now()<e) requestAnimationFrame(f); }; requestAnimationFrame(f); }, pD: 100, rD: 1600, f: 'bg-yellow-100' },
-  shatterGlass: { p: () => { C({ particleCount: 300, spread: 360, colors: ['#e0e7ff', '#c7d2fe', '#fff'], startVelocity: 100, gravity: 1.5, shapes: ['square'] }); }, pD: 0, rD: 1000, s: [{d:0, dur:0.5, c:'border-white'}, {d:0.1, dur:0.6, c:'border-blue-200'}] },
-  ethereal: { p: () => {}, pD: 0, rD: 2000 },
-  oblivion: { p: () => {}, pD: 0, rD: 1500 },
-  whisper: { p: () => {}, pD: 0, rD: 2500 },
-  submerge: { p: () => {}, pD: 0, rD: 1800 },
-  mist: { p: () => {}, pD: 0, rD: 2200 },
-  fadeAway: { p: () => {}, pD: 0, rD: 3000 }
+  idle: { y: [0, -8, 0], transition: { duration: 6, repeat: Infinity, ease: "easeInOut" } }
 };
 
 // --- Constants & Data ---
@@ -238,54 +1072,424 @@ interface Stats {
 
 type Phase = 'intro' | 'idle' | 'prep' | 'destroying' | 'aftermath';
 
+const playTensionSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return null;
+    const ctx = new AudioContext();
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(40, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 1.2); // Rises over the hold duration
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 1.2);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    
+    return {
+      stop: () => {
+        try {
+          gain.gain.cancelScheduledValues(ctx.currentTime);
+          gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc.stop(ctx.currentTime + 0.3);
+        } catch (e) {}
+      }
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
+const playBreathingSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    // Noise generator for breath
+    const bufferSize = ctx.sampleRate * 6; // 6 seconds
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    // Filter to make it sound like breath (pink/brown noise)
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, ctx.currentTime);
+    filter.frequency.linearRampToValueAtTime(800, ctx.currentTime + 3); // Inhale opens filter
+    filter.frequency.linearRampToValueAtTime(300, ctx.currentTime + 6); // Exhale closes filter
+    
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 3); // Inhale gets louder
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 6); // Exhale gets quieter
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    noise.start();
+  } catch (e) {}
+};
+
+const playCosmicHum = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    // Bass drop oscillator
+    const bassOsc = ctx.createOscillator();
+    const bassGain = ctx.createGain();
+    bassOsc.type = 'sine';
+    bassOsc.frequency.setValueAtTime(150, ctx.currentTime);
+    bassOsc.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 1.5);
+    bassGain.gain.setValueAtTime(0.8, ctx.currentTime);
+    bassGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2);
+    bassOsc.connect(bassGain);
+    bassGain.connect(ctx.destination);
+    bassOsc.start();
+    bassOsc.stop(ctx.currentTime + 2);
+
+    // Base oscillator
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    
+    // Binaural oscillator (slightly detuned for theta wave ~6Hz difference)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    
+    // Master gain for overall fade
+    const masterGain = ctx.createGain();
+    
+    // Panners to separate the frequencies
+    const panner1 = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    const panner2 = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+
+    osc1.type = 'sine';
+    osc2.type = 'sine';
+    
+    // Start at 60Hz, drop to 40Hz
+    osc1.frequency.setValueAtTime(60, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 4);
+    
+    // Start at 66Hz, drop to 44Hz (maintaining a 4-6Hz difference for Theta/Delta waves)
+    osc2.frequency.setValueAtTime(66, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(44, ctx.currentTime + 4);
+    
+    // Individual gains (mix them)
+    gain1.gain.value = 0.5;
+    gain2.gain.value = 0.5;
+    
+    // Master envelope
+    masterGain.gain.setValueAtTime(0, ctx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 1); // Fade in
+    masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 6); // Fade out
+    
+    // Routing
+    osc1.connect(gain1);
+    osc2.connect(gain2);
+    
+    if (panner1 && panner2) {
+      panner1.pan.value = -1; // Left ear
+      panner2.pan.value = 1;  // Right ear
+      gain1.connect(panner1);
+      gain2.connect(panner2);
+      panner1.connect(masterGain);
+      panner2.connect(masterGain);
+    } else {
+      gain1.connect(masterGain);
+      gain2.connect(masterGain);
+    }
+    
+    masterGain.connect(ctx.destination);
+    
+    osc1.start();
+    osc2.start();
+    osc1.stop(ctx.currentTime + 6);
+    osc2.stop(ctx.currentTime + 6);
+  } catch (e) {
+    console.error("Audio playback failed", e);
+  }
+};
+
 export default function AntiJournal() {
   const [text, setText] = useState('');
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<number | null>(null);
+  const holdStartTimeRef = useRef<number>(0);
+  const tensionSoundRef = useRef<{ stop: () => void } | null>(null);
+  const HOLD_DURATION = 1200;
   const [phase, setPhase] = useState<Phase>('idle');
-  const [activeAnim, setActiveAnim] = useState<string | null>(null);
+  type ActiveAnim = { id: string, key: string, text: string };
+  const [activeAnims, setActiveAnims] = useState<ActiveAnim[]>([]);
   const [isDestroyed, setIsDestroyed] = useState(false);
   const [aftermathMessage, setAftermathMessage] = useState('');
   
-  const [stats, setStats] = useState<Stats>({ total: 0 });
+  const [userData, setUserData] = useState<UserData>(defaultUserData);
+  const [fragments, setFragments] = useState<Fragment[]>([]);
+  const [globalStats, setGlobalStats] = useState({ totalReleases: 0, lastReleaseAt: 0 });
+  const [ritualMode, setRitualMode] = useState<RitualMode>('standard');
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showStats, setShowStats] = useState(false);
-  const [showDonation, setShowDonation] = useState(false);
+  const [showProModal, setShowProModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [hoveredAnim, setHoveredAnim] = useState<string | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState(0);
+
+  // Presence tracking
+  useEffect(() => {
+    if (!user) return;
+    
+    const presenceRef = doc(db, 'presence', user.uid);
+    const updatePresence = async () => {
+      try {
+        await setDoc(presenceRef, {
+          lastSeen: serverTimestamp(),
+          uid: user.uid
+        }, { merge: true });
+      } catch (e) {
+        console.error("Presence update failed", e);
+      }
+    };
+    
+    updatePresence();
+    const interval = setInterval(updatePresence, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    // Only subscribe if authenticated, as per firestore.rules
+    if (!user) {
+      setOnlineUsers(0);
+      return;
+    }
+    
+    const presenceCollection = collection(db, 'presence');
+    // Query for users active in the last 2 minutes
+    const q = query(presenceCollection, where('lastSeen', '>', new Date(Date.now() - 120000)));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOnlineUsers(snapshot.size);
+    }, (error) => {
+      // Gracefully handle permission errors
+      if (error.code === 'permission-denied') {
+        console.warn("Presence snapshot permission denied. This is expected if not fully authenticated.");
+      } else {
+        handleFirestoreError(error, OperationType.GET, 'presence');
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [currentHeading, setCurrentHeading] = useState(HEADINGS[0]);
+  const [currentSubheading, setCurrentSubheading] = useState(SUBHEADINGS[0]);
+
+  useEffect(() => {
+    setCurrentHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
+    setCurrentSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
+  }, []);
+  const [particles, setParticles] = useState<{id: number, x: number, y: number}[]>([]);
+  
+  const [showOldThemes, setShowOldThemes] = useState(false);
+  const [hoveredTheme, setHoveredTheme] = useState<Theme | null>(null);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const lastAnimRef = useRef<string | null>(null);
+  const recentAnimsRef = useRef<string[]>([]);
 
-  const PayPalButton = () => {
-    useEffect(() => {
-      const renderButton = () => {
-        const container = document.getElementById('donate-button');
-        if (container) container.innerHTML = ''; // Clear container
-        // @ts-ignore
-        if (window.PayPal) {
-          // @ts-ignore
-          window.PayPal.Donation.Button({
-            env: 'production',
-            hosted_button_id: '9YCRLK83LH2SQ',
-            image: {
-              src: 'https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif',
-              alt: 'Donate with PayPal button',
-              title: 'PayPal - The safer, easier way to pay online!',
-            }
-          }).render('#donate-button');
-        }
-      };
-
-      if (document.querySelector('script[src="https://www.paypalobjects.com/donate/sdk/donate-sdk.js"]')) {
-        renderButton();
-        return;
+  // Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (!currentUser) {
+        setLoading(false);
+        setUserData(defaultUserData);
       }
+    });
+    return () => unsubscribe();
+  }, []);
 
-      const script = document.createElement('script');
-      script.src = 'https://www.paypalobjects.com/donate/sdk/donate-sdk.js';
-      script.async = true;
-      script.onload = renderButton;
-      document.body.appendChild(script);
-    }, []);
-    return <div id="donate-button-container" className="flex justify-center"><div id="donate-button"></div></div>;
+  // Particle cleanup
+  useEffect(() => {
+    if (particles.length > 0) {
+      const timer = setTimeout(() => {
+        setParticles(prev => prev.slice(1));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [particles]);
+
+  const triggerHaptic = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+  }, []);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (activeAnims.length > 0) return;
+    setText(e.target.value);
+    triggerHaptic(5); // Light tap
+    
+    // Spawn a particle
+    const rect = textareaRef.current?.getBoundingClientRect();
+    if (rect) {
+      const x = rect.left + Math.random() * rect.width;
+      const y = rect.top + Math.random() * rect.height;
+      setParticles(prev => [...prev, { id: Date.now() + Math.random(), x, y }]);
+    }
   };
+
+  // Firestore Data Listener
+  useEffect(() => {
+    if (!user) return;
+
+    const userDocRef = doc(db, 'users', user.uid);
+    
+    // Listen to main profile
+    const unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as any;
+        setUserData(prev => ({
+          ...prev,
+          tier: data.tier || 'free',
+          totalReleases: data.totalReleases || 0,
+          dailyReleases: data.dailyReleases || 0,
+          lastDailyUpdate: data.lastDailyUpdate || Date.now(),
+          monthlyReleases: data.monthlyReleases || 0,
+          lastMonthlyUpdate: data.lastMonthlyUpdate || Date.now(),
+          theme: data.theme || 'void',
+          selectedAnimation: data.selectedAnimation || 'random',
+        }));
+      } else {
+        // Initialize user in Firestore if they don't exist
+        const initialData = {
+          tier: 'free',
+          totalReleases: 0,
+          dailyReleases: 0,
+          lastDailyUpdate: Date.now(),
+          monthlyReleases: 0,
+          lastMonthlyUpdate: Date.now(),
+          theme: 'void',
+          email: user.email,
+          updatedAt: serverTimestamp()
+        };
+        setDoc(userDocRef, initialData).catch(e => handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}`));
+      }
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+    });
+
+    // Listen to history subcollection
+    const historyQuery = query(collection(db, 'users', user.uid, 'history'), orderBy('timestamp', 'desc'), limit(50));
+    const unsubscribeHistory = onSnapshot(historyQuery, (querySnap) => {
+      const history = querySnap.docs.map(doc => doc.data() as ReleaseEntry);
+      setUserData(prev => ({ ...prev, history }));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/history`);
+    });
+
+    // Listen to fragments
+    const fragmentsQuery = query(collection(db, 'users', user.uid, 'fragments'), orderBy('timestamp', 'desc'), limit(100));
+    const unsubscribeFragments = onSnapshot(fragmentsQuery, (querySnap) => {
+      const frags = querySnap.docs.map(doc => doc.data() as Fragment);
+      setFragments(frags);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/fragments`);
+    });
+
+    return () => {
+      unsubscribeProfile();
+      unsubscribeHistory();
+      unsubscribeFragments();
+    };
+  }, [user]);
+
+  useEffect(() => {
+    const unsubscribeGlobal = onSnapshot(doc(db, 'global', 'stats'), (docSnap) => {
+      if (docSnap.exists()) {
+        setGlobalStats(docSnap.data() as any);
+      }
+    }, (error) => {
+      // Handle error gracefully
+      console.warn("Global stats snapshot failed", error);
+    });
+    return () => unsubscribeGlobal();
+  }, []);
+
+  const handleLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+        console.error("Login failed", error);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const performLogout = async () => {
+    try {
+      await signOut(auth);
+      setShowLogoutConfirm(false);
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
+  const saveUserData = async (newData: Partial<UserData>) => {
+    if (!user) return;
+    const userDocRef = doc(db, 'users', user.uid);
+    try {
+      await updateDoc(userDocRef, {
+        ...newData,
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, `users/${user.uid}`);
+    }
+  };
+
+  const handleProApproval = useCallback(async (subId: string) => {
+    if (!user) return;
+    console.log("Subscription approved:", subId);
+    try {
+      await saveUserData({ tier: 'pro', paypalSubscriptionId: subId });
+      setShowProModal(false);
+      setAftermathMessage("Welcome to Pro. The void expands.");
+      setActiveAnims(prev => [...prev, { id: 'pro-anim', key: 'supernovaPro', text: 'Welcome to Pro. The void expands.' }]);
+      setTimeout(() => { setActiveAnims(prev => prev.filter(a => a.id !== 'pro-anim')); }, 2000);
+    } catch (e) {
+      console.error("Failed to upgrade tier", e);
+    }
+  }, [user]);
+
+  const currentTheme = THEMES[userData.theme] || THEMES.void;
 
   const typingIntensity = useMemo(() => Math.min(text.length / 100, 1), [text]);
 
@@ -301,66 +1505,475 @@ export default function AntiJournal() {
     }
   }, [text]);
 
-  useEffect(() => {
-    const savedStats = localStorage.getItem('journalStats');
-    if (savedStats) setStats(JSON.parse(savedStats));
-  }, []);
+  const handleDestroy = async () => {
+    if (!text.trim() || !user) return;
+    
+    // Sentiment/Intensity detection
+    const intensity = Math.min(1.5, 0.5 + (text.length / 500));
+    const angryWords = ['hate', 'angry', 'rage', 'kill', 'die', 'furious', 'mad', 'scream'];
+    const sadWords = ['sad', 'lonely', 'cry', 'pain', 'hurt', 'lost', 'empty', 'alone'];
+    const isAngry = angryWords.some(w => text.toLowerCase().includes(w));
+    const isSad = sadWords.some(w => text.toLowerCase().includes(w));
+    
+    let tone: 'angry' | 'sad' | 'neutral' = 'neutral';
+    if (isAngry) tone = 'angry';
+    else if (isSad) tone = 'sad';
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleDestroy();
+    triggerHaptic(ritualMode === 'heavy' ? [100, 200, 300, 400] : [50, 100, 150, 200, 300]);
+    playCosmicHum();
+
+    const proProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => ANIMATIONS_CONFIG[key].isPro);
+    const freeProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => !ANIMATIONS_CONFIG[key].isPro);
+
+    let selectedProfile: string;
+    
+    if (userData.selectedAnimation && userData.selectedAnimation !== 'random') {
+      const isProAnim = ANIMATIONS_CONFIG[userData.selectedAnimation]?.isPro;
+      if (isProAnim && userData.tier !== 'pro') {
+        const available = freeProfiles;
+        selectedProfile = available[Math.floor(Math.random() * available.length)];
+      } else {
+        selectedProfile = userData.selectedAnimation;
+      }
+    } else {
+      // Logic for picking animation based on tone
+      if (ritualMode === 'oracle') selectedProfile = 'singularity';
+      else if (tone === 'angry') selectedProfile = 'incinerate';
+      else if (tone === 'sad') selectedProfile = 'nebula';
+      else {
+        const available = userData.tier === 'pro' ? [...proProfiles, ...freeProfiles] : freeProfiles;
+        selectedProfile = available[Math.floor(Math.random() * available.length)];
+      }
     }
-  };
-
-  const handleDestroy = () => {
-    if (!text.trim() || activeAnim) return;
-
-    // Update stats
-    const newStats = { ...stats };
-    newStats.total += 1;
-    setStats(newStats);
-    localStorage.setItem('journalStats', JSON.stringify(newStats));
-
-    const profiles = Object.keys(anims);
-    let selectedProfile = profiles[Math.floor(Math.random() * profiles.length)];
     
-    // Ensure it's different from the last one
-    if (profiles.length > 1 && selectedProfile === lastAnimRef.current) {
-      const filteredProfiles = profiles.filter(p => p !== lastAnimRef.current);
-      selectedProfile = filteredProfiles[Math.floor(Math.random() * filteredProfiles.length)];
+    recentAnimsRef.current.push(selectedProfile);
+    if (recentAnimsRef.current.length > 3) {
+      recentAnimsRef.current.shift();
     }
+    const animId = Math.random().toString(36).substring(2, 9);
+    const currentText = text;
     
-    lastAnimRef.current = selectedProfile;
-    setActiveAnim(selectedProfile);
-    
-    // Get message
-    setAftermathMessage(aftermathMessages[Math.floor(Math.random() * aftermathMessages.length)]);
+    setActiveAnims(prev => [...prev, { id: animId, key: selectedProfile, text: currentText }]);
+    setText('');
 
-    const config = anims[selectedProfile];
-    setTimeout(config.p, config.pD);
+    // Randomize next heading/subheading
+    setCurrentHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
+    setCurrentSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
+    
+    // Create Fragment
+    const fragmentType: Fragment['type'][] = ['seed', 'crystal', 'nebula', 'orb'];
+    const newFragment: Fragment = {
+      id: Math.random().toString(36).substring(2, 9),
+      type: ritualMode === 'heavy' ? 'crystal' : ritualMode === 'mist' ? 'nebula' : fragmentType[Math.floor(Math.random() * fragmentType.length)],
+      color: tone === 'angry' ? '#ef4444' : tone === 'sad' ? '#3b82f6' : THEME_COLORS[userData.theme as keyof typeof THEME_COLORS] || '#ffffff',
+      size: 10 + (intensity * 20),
+      intensity,
+      timestamp: Date.now(),
+      ritualMode
+    };
+
+    try {
+      // Add to history
+      await addDoc(collection(db, 'users', user.uid, 'history'), {
+        id: newFragment.id,
+        timestamp: newFragment.timestamp,
+        snippet: currentText.length > 15 ? currentText.substring(0, 15) + '...' : currentText,
+        animation: selectedProfile
+      });
+      
+      // Add fragment
+      await addDoc(collection(db, 'users', user.uid, 'fragments'), newFragment);
+
+      // Update total count
+      const resetPoint = new Date();
+      resetPoint.setUTCHours(7, 0, 0, 0);
+      if (Date.now() < resetPoint.getTime()) {
+        resetPoint.setUTCDate(resetPoint.getUTCDate() - 1);
+      }
+
+      const isNewDay = userData.lastDailyUpdate < resetPoint.getTime();
+      const isNewMonth = !isSameMonth(new Date(userData.lastMonthlyUpdate), new Date());
+      
+      await updateDoc(doc(db, 'users', user.uid), {
+        totalReleases: userData.totalReleases + 1,
+        dailyReleases: isNewDay ? 1 : userData.dailyReleases + 1,
+        lastDailyUpdate: Date.now(),
+        monthlyReleases: isNewMonth ? 1 : userData.monthlyReleases + 1,
+        lastMonthlyUpdate: Date.now(),
+        updatedAt: serverTimestamp()
+      });
+
+      // Update global stats
+      const globalRef = doc(db, 'global', 'stats');
+      const globalSnap = await getDoc(globalRef);
+      const now = Date.now();
+      
+      // Use the same reset point for global
+      if (globalSnap.exists()) {
+        const data = globalSnap.data();
+        const lastResetAt = data.lastResetAt || 0;
+        
+        if (lastResetAt < resetPoint.getTime()) {
+          // Reset the global counter (Daily Global Releases)
+          await updateDoc(globalRef, {
+            totalReleases: 1,
+            lastReleaseAt: now,
+            lastResetAt: now
+          });
+        } else {
+          await updateDoc(globalRef, {
+            totalReleases: (data.totalReleases || 0) + 1,
+            lastReleaseAt: now
+          });
+        }
+      } else {
+        await setDoc(globalRef, { 
+          totalReleases: 1, 
+          lastReleaseAt: now,
+          lastResetAt: now 
+        });
+      }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}/history`);
+    }
+
+    // Get message based on tone
+    const angryMessages = [
+      "The fire consumes it.", "Let the ash scatter.", "Your rage is absorbed.", "The heat dissipates.", "Breathe out the fire."
+    ];
+    const sadMessages = [
+      "Tears lost in the void.", "The ache softens.", "You are held by the silence.", "Let the sorrow drift.", "It is okay to let go."
+    ];
+    const neutralMessages = [
+      "Breathe. It's gone.", "Lightness returns.", "The void is quiet.",
+      "Letting go is freedom.", "Clearer now.", "Peace found.", "Unburdened."
+    ];
+    const oracleMessages = [
+      "The stars align in your favor.", "A new path reveals itself.", "The void answers with silence.", "Your question is the answer.", "Look within for the truth.", "The cosmos is indifferent.", "A shift in perspective is needed.", "Patience is your ally.", "The answer is obscured by clouds.", "Trust the journey."
+    ];
+
+    let selectedMessages = neutralMessages;
+    if (ritualMode === 'oracle') {
+      selectedMessages = oracleMessages;
+    } else {
+      if (tone === 'angry') selectedMessages = angryMessages;
+      else if (tone === 'sad') selectedMessages = sadMessages;
+    }
+
+    setAftermathMessage(selectedMessages[Math.floor(Math.random() * selectedMessages.length)]);
+
+    const duration = ANIMATIONS_CONFIG[selectedProfile]?.duration || 3000;
 
     setTimeout(() => {
-      setActiveAnim(null);
+      setActiveAnims(prev => prev.filter(a => a.id !== animId));
       setIsDestroyed(true);
-      setText('');
-      setTimeout(() => setIsDestroyed(false), 3500);
-    }, config.rD);
+      playBreathingSound();
+      
+      // Subtle heartbeat haptics during breathing
+      const breathInterval = setInterval(() => {
+        triggerHaptic(5);
+      }, 1000);
+      
+      setTimeout(() => {
+        clearInterval(breathInterval);
+        setIsDestroyed(false);
+      }, 6000); // 6 seconds for breathing exercise
+    }, duration);
   };
 
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden selection:bg-purple-500/30 selection:text-white bg-[#05000a]" style={{ perspective: '2000px' }}>
-      <AmbientBackground />
+  const startHold = () => {
+    if (!text.trim() || activeAnims.length > 0 || holdTimerRef.current) return;
+    setIsHolding(true);
+    holdStartTimeRef.current = Date.now();
+    triggerHaptic(10);
+    
+    if (!tensionSoundRef.current) {
+      tensionSoundRef.current = playTensionSound();
+    }
+    
+    let lastHapticProgress = 0;
+
+    const updateHold = () => {
+      const elapsed = Date.now() - holdStartTimeRef.current;
+      const progress = Math.min(100, (elapsed / HOLD_DURATION) * 100);
+      setHoldProgress(progress);
       
+      // Escalating haptics as you hold
+      if (progress - lastHapticProgress > 15) {
+        triggerHaptic(10 + progress / 2);
+        lastHapticProgress = progress;
+      }
+      
+      if (progress >= 100) {
+        if (tensionSoundRef.current) {
+          tensionSoundRef.current.stop();
+          tensionSoundRef.current = null;
+        }
+        setIsHolding(false);
+        setHoldProgress(0);
+        handleDestroy();
+      } else {
+        holdTimerRef.current = requestAnimationFrame(updateHold);
+      }
+    };
+    
+    holdTimerRef.current = requestAnimationFrame(updateHold);
+  };
+
+  const stopHold = () => {
+    if (holdTimerRef.current) {
+      cancelAnimationFrame(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (tensionSoundRef.current) {
+      tensionSoundRef.current.stop();
+      tensionSoundRef.current = null;
+    }
+    setIsHolding(false);
+    setHoldProgress(0);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (activeAnims.length > 0) {
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      startHold();
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      stopHold();
+    }
+  };
+
+  const getMonthlyStats = () => {
+    const now = new Date();
+    const lastMonth = subDays(now, 30);
+    
+    const thisMonthCount = userData.history.filter(h => isSameMonth(new Date(h.timestamp), now)).length;
+    const lastMonthCount = userData.history.filter(h => isSameMonth(new Date(h.timestamp), lastMonth)).length;
+
+    if (lastMonthCount === 0) return { percent: 100, count: thisMonthCount };
+    
+    const diff = thisMonthCount - lastMonthCount;
+    const percent = Math.round((diff / lastMonthCount) * 100);
+    return { percent, count: thisMonthCount };
+  };
+
+  const monthlyStats = getMonthlyStats();
+  const dailyCount = useMemo(() => {
+    if (!isSameDay(new Date(userData.lastDailyUpdate), new Date())) {
+      return 0;
+    }
+    return userData.dailyReleases;
+  }, [userData.dailyReleases, userData.lastDailyUpdate]);
+
+  const monthlyCount = useMemo(() => {
+    if (!isSameMonth(new Date(userData.lastMonthlyUpdate), new Date())) {
+      return 0;
+    }
+    return userData.monthlyReleases;
+  }, [userData.monthlyReleases, userData.lastMonthlyUpdate]);
+
+  if (loading) {
+    return (
+      <div className={cn("min-h-screen w-full flex items-center justify-center", THEMES.void.bg)}>
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="text-purple-300 font-serif italic text-2xl"
+        >
+          Entering the void...
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-black text-white font-sans">
+        {/* Background Glows */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #4f46e5 0%, transparent 70%)' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #9333ea 0%, transparent 70%)' }} />
+          {/* Subtle Grid */}
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTTAgMGg0MHYxSDB6TTAgMHY0MGgxVjB6IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIi8+Cjwvc3ZnPg==')] opacity-50" />
+        </div>
+
+        {/* Navigation */}
+        <nav className="w-full px-8 py-6 flex items-center justify-between z-20 relative">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white text-black flex items-center justify-center font-bold text-xl rounded-sm">
+              <ArrowUp className="w-5 h-5 rotate-45" />
+            </div>
+            <span className="font-bold tracking-tight text-lg">ANTI-JOURNAL</span>
+            <span className="text-[10px] uppercase tracking-widest text-white/40 ml-2 border border-white/10 px-2 py-0.5 rounded-full">Beta</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8 text-sm text-white/70">
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link to="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link>
+          </div>
+        </nav>
+
+        {/* Hero Content */}
+        <div className="flex-grow flex flex-col items-center justify-center z-10 text-center px-6 relative">
+          
+          {/* Floating 3D Elements (Simulated with CSS) */}
+          <motion.div 
+            animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }} 
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/4 left-1/4 w-16 h-16 rounded-xl liquid-glass rotate-12 hidden md:block"
+          />
+          <motion.div 
+            animate={{ y: [10, -10, 10], rotate: [0, -10, 0] }} 
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute bottom-1/3 right-1/4 w-24 h-24 rounded-full liquid-glass -rotate-12 hidden md:block"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="max-w-4xl mx-auto"
+          >
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-sans font-semibold tracking-tight text-white mb-6 leading-[1.1]">
+              Release your heaviest <br className="hidden md:block" /> thoughts into the void
+            </h1>
+            <p className="text-lg md:text-xl font-sans font-light text-white/60 leading-relaxed max-w-2xl mx-auto mb-12">
+              AntiJournal is a private space to let go of what weighs you down. No tracking, no judgment, just release.
+            </p>
+            
+            {/* Glowing Search Bar / Login Button */}
+            <div className="relative max-w-2xl mx-auto w-full group">
+              {/* Outer Glow */}
+              <div className="absolute -inset-1 bg-[radial-gradient(circle,rgba(147,51,234,0.5)_0%,transparent_70%)] rounded-full opacity-50 group-hover:opacity-75 transition duration-1000 group-hover:duration-200 animate-pulse" />
+              
+              {/* Inner Search Bar */}
+              <button
+                onClick={handleLogin}
+                disabled={isLoggingIn}
+                className="relative w-full h-16 md:h-20 liquid-glass rounded-full flex items-center justify-between px-6 md:px-8 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-4 text-white/50 group-hover:text-white/80 transition-colors">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <span className="text-lg md:text-xl font-light">
+                    {isLoggingIn ? 'Connecting to the void...' : 'Enter the void...'}
+                  </span>
+                </div>
+                
+                {/* Filter Icon / Action Button */}
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white/80 group-hover:bg-white/10 transition-colors">
+                  {isLoggingIn ? (
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <ArrowUp className="w-5 h-5" />
+                  )}
+                </div>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Footer */}
+        <footer className="w-full p-8 flex flex-col md:flex-row items-center justify-between z-10 gap-4 relative">
+          <div className="text-[10px] text-white/20 uppercase tracking-widest">
+            © 2026 Anti-Journal. All rights released.
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("min-h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000", currentTheme.bg)} style={{ perspective: '2000px' }}>
+      <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} />
+      <VoidGarden fragments={fragments} reduceMotion={reduceMotion} />
+      
+      {/* Hold Overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-40 transition-opacity duration-75"
+        style={{ 
+          backgroundColor: THEME_COLORS[userData.theme],
+          opacity: isHolding ? (holdProgress / 100) * 0.3 : 0 
+        }}
+      />
+      
+      {/* Top Left: Global Pulse */}
       <AnimatePresence>
-        {activeAnim === 'blackhole' && <BlackHoleEffect />}
-        {activeAnim && anims[activeAnim].f && <FullScreenFlash color={anims[activeAnim].f} />}
-        {activeAnim && anims[activeAnim].s?.map((sw, i) => (
-          <Shockwave key={i} delay={sw.d} duration={sw.dur} color={sw.c} />
+        {!isZenMode && !isDestroyed && activeAnims.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute top-8 left-8 z-50"
+          >
+            <GlobalPulse totalReleases={globalStats.totalReleases} onlineUsers={onlineUsers} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Top Right: Controls */}
+      <AnimatePresence>
+        {!isZenMode && !isDestroyed && activeAnims.length === 0 && user && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute top-8 right-8 z-50 flex items-center gap-3"
+          >
+            <button 
+              onClick={() => setShowStats(true)} 
+              className="liquid-glass px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <Activity className="w-3 h-3"/> Insights
+            </button>
+            <button 
+              onClick={() => setIsZenMode(true)}
+              className="liquid-glass px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <Eye className="w-3 h-3"/> Zen
+            </button>
+            <button 
+              onClick={handleLogout} 
+              className="liquid-glass px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <LogOut className="w-3 h-3"/>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {isZenMode && !isDestroyed && activeAnims.length === 0 && user && (
+        <button 
+          onClick={() => setIsZenMode(false)}
+          className="absolute top-8 right-8 z-50 text-white/10 hover:text-white/40 transition-colors opacity-0 hover:opacity-100"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      )}
+
+      <AnimatePresence>
+        {activeAnims.map(anim => (
+          <ActiveAnimationComponent key={anim.id} text={anim.text} theme={userData.theme} animKey={anim.key} />
         ))}
       </AnimatePresence>
 
-      <div className="w-full max-w-3xl flex flex-col items-center justify-center flex-grow relative z-10">
+      <div className="w-full max-w-3xl px-6 flex flex-col items-center justify-center flex-grow relative z-10">
+        {/* Typing Particles */}
+        {particles.map(p => (
+          <motion.div
+            key={p.id}
+            initial={{ opacity: 1, scale: 0, x: p.x, y: p.y }}
+            animate={{ opacity: 0, scale: 2, y: p.y - 50 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="fixed w-1 h-1 rounded-full bg-white/50 pointer-events-none z-50"
+          />
+        ))}
+
         <AnimatePresence mode="wait">
           {!isDestroyed ? (
             <motion.div
@@ -369,174 +1982,690 @@ export default function AntiJournal() {
               className="w-full flex flex-col items-center relative"
             >
               <motion.div
-                className="absolute inset-0 rounded-[28px] bg-purple-600/30 mix-blend-screen pointer-events-none will-change-transform"
-                style={{ filter: 'blur(40px)', transform: 'translateZ(0)' }}
+                className="absolute inset-0 rounded-[28px] pointer-events-none will-change-transform opacity-30"
+                style={{ transform: 'translateZ(0)', background: `radial-gradient(circle, ${THEME_COLORS[userData.theme]}4D 0%, transparent 70%)` }}
                 animate={{ opacity: typingIntensity * 0.8 + 0.1, scale: 1 + typingIntensity * 0.1 }}
                 transition={{ duration: 0.2 }}
               />
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ 
-                  opacity: text ? 0 : 1, 
-                  y: text ? -20 : 0,
-                  scale: text ? 0.95 : 1
-                }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="mb-12 text-center pointer-events-none"
-              >
-                <h2 className="text-4xl md:text-5xl font-serif italic text-white/90 tracking-tight leading-tight">
-                  What's weighing on your mind?
-                </h2>
-                <p className="mt-4 text-purple-200/40 font-sans text-sm tracking-widest uppercase">
-                  The void is listening.
-                </p>
-              </motion.div>
-
-              <motion.div
-                variants={containerVariants} initial="idle" animate={activeAnim || "idle"}
-                className="liquid-glass rounded-[28px] w-full max-w-2xl p-2 flex flex-col relative z-20 will-change-transform"
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                <motion.div variants={textVariants} initial="idle" animate={activeAnim || "idle"} className="w-full flex flex-col relative" style={{ transformStyle: 'preserve-3d' }}>
-                  {activeAnim === 'blackhole' ? (
-                    <div className="w-full px-6 py-6 text-xl md:text-2xl font-sans font-light leading-relaxed min-h-[80px] relative overflow-visible">
-                      {text.split('').map((char, i) => (
-                        <motion.span
-                          key={i}
-                          initial={{ opacity: 1, x: 0, y: 0, z: 0, rotate: 0 }}
-                          animate={{ 
-                            x: (Math.random() - 0.5) * 100, 
-                            y: (Math.random() - 0.5) * 100, 
-                            z: -1000, 
-                            rotate: Math.random() * 720,
-                            opacity: 0,
-                            scale: 0
-                          }}
-                          transition={{ 
-                            duration: 1.5 + Math.random(), 
-                            delay: Math.random() * 1.5,
-                            ease: "circIn"
-                          }}
-                          className="inline-block whitespace-pre"
-                        >
-                          {char}
-                        </motion.span>
-                      ))}
-                    </div>
-                  ) : (
-                    <textarea
-                      ref={textareaRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} disabled={!!activeAnim}
-                      placeholder="Type to release..."
-                      className="w-full bg-transparent text-white placeholder:text-white/30 text-xl md:text-2xl font-sans font-light resize-none focus:outline-none px-6 py-6 leading-relaxed relative z-10"
-                      rows={1} spellCheck={false}
-                      style={{ textShadow: `0 0 ${typingIntensity * 10}px rgba(216, 180, 254, ${typingIntensity * 0.5})` }}
-                    />
-                  )}
-                  
-                  <div className="flex justify-between items-center px-4 pb-3 pt-2">
-                    <AnimatePresence>
-                      {text.trim() && !activeAnim ? (
-                        <motion.span 
-                          initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                          className="text-purple-200/50 text-[10px] font-sans uppercase tracking-[0.2em] ml-2"
-                        >
-                          Press Enter to release
-                        </motion.span>
-                      ) : (
-                        <span className="text-transparent text-[10px] font-sans uppercase tracking-[0.2em] ml-2 select-none">Placeholder</span>
-                      )}
-                    </AnimatePresence>
-
-                    <AnimatePresence>
-                      {text.trim() && !activeAnim && (
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.5, rotate: -45 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
-                          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }} whileTap={{ scale: 0.9 }}
-                          onClick={handleDestroy}
-                          className="liquid-glass-strong rounded-full p-2.5 text-white transition-colors flex items-center justify-center group cursor-pointer relative overflow-hidden"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                          <ArrowUp className="w-5 h-5 opacity-90 group-hover:opacity-100 transition-opacity relative z-10" />
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-                  </div>
+              {!isZenMode && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ 
+                    opacity: text || activeAnims.length > 0 ? 0 : 1, 
+                    y: text || activeAnims.length > 0 ? -20 : 0,
+                    scale: text || activeAnims.length > 0 ? 0.95 : 1
+                  }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="mb-8 md:mb-12 text-center pointer-events-none"
+                >
+                  <h2 className="text-3xl md:text-5xl font-serif italic text-white/90 tracking-tight leading-tight">
+                    {currentHeading}
+                  </h2>
+                  <p className={cn("mt-4 font-sans text-sm tracking-widest uppercase", currentTheme.text, "opacity-40")}>
+                    {currentSubheading}
+                  </p>
                 </motion.div>
+              )}
+
+              {/* Ritual Selector */}
+              {!isZenMode && !text && activeAnims.length === 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-2 mb-8 z-30"
+                >
+                  {(Object.keys(RITUAL_MODES) as RitualMode[]).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setRitualMode(mode)}
+                      className={cn(
+                        "px-4 py-2 rounded-full border text-[10px] uppercase tracking-widest transition-all flex items-center gap-2",
+                        ritualMode === mode 
+                          ? "bg-white text-black border-white" 
+                          : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
+                      )}
+                    >
+                      {RITUAL_MODES[mode].icon}
+                      {RITUAL_MODES[mode].name}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+
+              <motion.div
+                variants={containerVariants} initial="idle" 
+                animate={activeAnims.length > 0 ? "idle" : {
+                  boxShadow: isHolding ? `0 0 ${holdProgress * 3}px rgba(255, 50, 50, ${holdProgress / 100}), inset 0 0 ${holdProgress * 2}px rgba(255, 0, 0, ${holdProgress / 200})` : text ? `0 0 ${20 + typingIntensity * 40}px ${THEME_COLORS[userData.theme]}33` : '0 0 0px transparent',
+                  scale: isHolding ? 1 - holdProgress / 500 : text ? [1, 1.005 + typingIntensity * 0.01, 1] : 1,
+                  borderColor: isHolding ? `rgba(255, 50, 50, ${holdProgress / 100})` : undefined
+                }}
+                className={cn("liquid-glass rounded-[28px] w-full max-w-2xl p-2 flex flex-col relative z-20 will-change-transform transition-opacity duration-500", activeAnims.length > 0 && "opacity-0 pointer-events-none")}
+                style={{ transformStyle: 'preserve-3d' }}
+                transition={{ duration: isHolding ? 0.1 : Math.max(0.5, 2 - typingIntensity), repeat: text && activeAnims.length === 0 && !isHolding ? Infinity : 0, ease: "easeInOut" }}
+              >
+                <div 
+                  className="w-full flex flex-col relative transition-all duration-75" 
+                  style={{ 
+                    transformStyle: 'preserve-3d',
+                    transform: isHolding ? `translate(${(Math.random() - 0.5) * (holdProgress/2)}px, ${(Math.random() - 0.5) * (holdProgress/2)}px)` : 'none',
+                  }}
+                >
+                  <textarea
+                    ref={textareaRef} value={text} onChange={handleTextChange} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp}
+                    disabled={activeAnims.length > 0}
+                    placeholder={ritualMode === 'oracle' ? "Ask the void..." : ritualMode === 'echo' ? "Whisper to the void..." : "Type to release..."}
+                    className={cn(
+                      "w-full bg-transparent placeholder:text-white/30 text-lg md:text-2xl font-sans font-light resize-none focus:outline-none px-6 py-6 leading-relaxed relative z-10 transition-all duration-500 text-white",
+                      ritualMode === 'heavy' && "font-syne font-bold tracking-tight",
+                      ritualMode === 'mist' && "font-fraunces italic opacity-60",
+                      ritualMode === 'echo' && "hover:opacity-100 focus:opacity-100 opacity-50",
+                      ritualMode === 'oracle' && "font-serif text-center"
+                    )}
+                    rows={1} spellCheck={false}
+                    style={{ 
+                      textShadow: `0 0 ${typingIntensity * 15}px rgba(255, 255, 255, ${typingIntensity * 0.4})`,
+                      transform: ritualMode === 'heavy' ? `scale(${1 + typingIntensity * 0.05})` : 'none'
+                    }}
+                  />
+                  
+                  {!isZenMode && (
+                    <div className="flex justify-between items-center px-4 pb-3 pt-2">
+                      <AnimatePresence>
+                        {text.trim() ? (
+                          <motion.span 
+                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+                            className={cn("text-[10px] font-sans uppercase tracking-[0.2em] ml-2 opacity-50 transition-colors", isHolding ? "text-red-400" : currentTheme.text)}
+                          >
+                            {isHolding ? "Releasing..." : "Hold Enter or button to release"}
+                          </motion.span>
+                        ) : (
+                          <span className="text-transparent text-[10px] font-sans uppercase tracking-[0.2em] ml-2 select-none">Placeholder</span>
+                        )}
+                      </AnimatePresence>
+
+                      <AnimatePresence>
+                        {text.trim() && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.5, rotate: -45 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
+                            whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }} whileTap={{ scale: 0.9 }}
+                            onPointerDown={startHold}
+                            onPointerUp={stopHold}
+                            onPointerLeave={stopHold}
+                            className={cn(
+                              "liquid-glass-strong rounded-full p-2.5 text-white transition-colors flex items-center justify-center group cursor-pointer relative overflow-hidden",
+                              isHolding && "ring-2 ring-white/50"
+                            )}
+                          >
+                            <div 
+                              className="absolute inset-0 bg-white/40 origin-bottom"
+                              style={{ transform: `scaleY(${holdProgress / 100})`, transition: isHolding ? 'none' : 'transform 0.3s ease-out' }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                            <ArrowUp className={cn("w-5 h-5 opacity-90 transition-opacity relative z-10", isHolding ? "opacity-100 animate-pulse" : "group-hover:opacity-100")} />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             </motion.div>
           ) : (
             <motion.div
               key="aftermath"
-              initial={{ opacity: 0, scale: 0.9, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
-              transition={{ duration: 1.5, ease: [0.2, 0.8, 0.2, 1] }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              initial={{ opacity: 0, scale: 0.9, y: 10 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 2, ease: "easeOut" }}
+              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-50 bg-black/40"
             >
-              <p className="text-purple-100/80 font-serif italic text-4xl md:text-5xl tracking-wide drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">
+              <div className="relative flex items-center justify-center mb-16">
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: [0.5, 2, 0.5], opacity: [0, 0.2, 0] }}
+                  transition={{ duration: 6, ease: "easeInOut", times: [0, 0.5, 1] }}
+                  className="absolute w-48 h-48 rounded-full border border-white/20"
+                />
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: [0.5, 1.5, 0.5], opacity: [0, 0.4, 0] }}
+                  transition={{ duration: 6, ease: "easeInOut", times: [0, 0.5, 1] }}
+                  className="absolute w-32 h-32 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)]"
+                />
+                <motion.p
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 3, ease: "easeInOut", times: [0, 0.5, 1] }}
+                  className="text-white/40 font-mono text-sm tracking-[0.3em] uppercase absolute"
+                >
+                  Inhale
+                </motion.p>
+                <motion.p
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 3, ease: "easeInOut", times: [0, 0.5, 1], delay: 3 }}
+                  className="text-white/40 font-mono text-sm tracking-[0.3em] uppercase absolute"
+                >
+                  Exhale
+                </motion.p>
+              </div>
+
+              <motion.p 
+                key={aftermathMessage}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10] }}
+                transition={{ duration: 6, ease: "easeInOut", times: [0, 0.2, 0.8, 1] }}
+                className={cn("font-fraunces italic text-3xl md:text-5xl tracking-wide drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] text-center max-w-2xl px-8", currentTheme.text)}
+              >
                 {aftermathMessage}
-              </p>
+              </motion.p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 1 }}
-        className="absolute bottom-8 text-purple-200/30 font-sans text-[10px] tracking-[0.3em] uppercase z-10 flex items-center gap-4"
-      >
-        <span>Thoughts cleared today: <span className="text-purple-300/80 font-medium ml-2">{stats.total}</span></span>
-        <button onClick={() => setShowStats(true)} className="hover:text-purple-300 transition-colors">Settings</button>
-        <button onClick={() => setShowDonation(true)} className="hover:text-purple-300 transition-colors">Support</button>
-      </motion.div>
+      <AnimatePresence>
+        {!isZenMode && !isDestroyed && activeAnims.length === 0 && (
+          <motion.footer 
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ delay: 1, duration: 1 }}
+            className={cn("absolute bottom-8 left-0 right-0 px-8 z-10 flex items-center justify-between", currentTheme.text, "opacity-80")}
+          >
+            {/* Left: Progress */}
+            <div className="flex items-center gap-4 font-sans text-[10px] tracking-[0.3em] uppercase">
+              <div className="liquid-glass px-4 py-2 rounded-full flex items-center gap-2">
+                <span className="whitespace-nowrap">Thoughts cleared today: <span className="font-medium ml-2 text-white">{dailyCount}</span></span>
+              </div>
+              {userData.tier === 'free' && (
+                <button onClick={() => setShowProModal(true)} className="liquid-glass-strong px-4 py-2 rounded-full hover:scale-105 transition-transform flex items-center gap-1.5 text-amber-300">
+                  <Sparkles className="w-3 h-3" /> Upgrade
+                </button>
+              )}
+            </div>
+
+            {/* Right: Socials */}
+            <div className="flex items-center gap-3">
+                  <a href="https://x.com/@PrimeDevv" target="_blank" rel="noopener noreferrer" className="liquid-glass w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 5.936H5.059z"></path></svg>
+                  </a>
+                  <a href="https://www.instagram.com/officialprimedev/" target="_blank" rel="noopener noreferrer" className="liquid-glass w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd"></path></svg>
+                  </a>
+                  <a href="https://discord.gg/bcXduuG3Da" target="_blank" rel="noopener noreferrer" className="liquid-glass w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"></path></svg>
+                  </a>
+                </div>
+              </motion.footer>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
-        {showDonation && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
-            onClick={() => setShowDonation(false)}
-          >
+        {showStats && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
             <motion.div
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-              className="bg-[#0a0015] border border-purple-500/20 rounded-3xl p-8 w-full max-w-md"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowStats(false)}
+              className={cn(
+                "absolute inset-0 bg-black/80",
+              )}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[32px] border border-white/10 bg-[#0A0A0A] shadow-2xl flex flex-col"
               onClick={e => e.stopPropagation()}
             >
-              <h2 className="text-2xl font-serif italic text-white mb-6">Support the Void</h2>
-              <PayPalButton />
-              <button onClick={() => setShowDonation(false)} className="mt-8 w-full py-2 bg-white/10 rounded-lg text-white text-sm font-sans">Close</button>
+              {/* Liquid Glass Background Effect */}
+              {!reduceMotion && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+                  <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full opacity-30 animate-pulse" style={{ background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)' }} />
+                  <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s', background: 'radial-gradient(circle, #10b981 0%, transparent 70%)' }} />
+                </div>
+              )}
+
+              {/* Header */}
+              <div className={cn(
+                "relative z-10 flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]",
+              )}>
+                <div>
+                  <h2 className="text-4xl font-light tracking-tight text-white serif">
+                    Insights <span className="italic opacity-50">&</span> Settings
+                  </h2>
+                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/40 font-medium">
+                    Personal Archive • Configuration
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowStats(false)}
+                  className="p-3 rounded-full border border-white/10 hover:bg-white/5 transition-colors group"
+                >
+                  <X className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                  
+                  {/* Left Column: Stats */}
+                  <div className="lg:col-span-5 space-y-10">
+                    <section>
+                      <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6 flex items-center gap-2">
+                        <Activity className="w-3 h-3" />
+                        Monthly Overview
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="p-8 rounded-3xl bg-white/[0.03] border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-500">
+                          {/* Subtle Glow */}
+                          <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full group-hover:opacity-100 opacity-50 transition-opacity duration-700" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)' }} />
+                          
+                          <div className="relative z-10">
+                            <div className="flex items-baseline gap-3">
+                              <span className="text-6xl font-light tracking-tighter text-white mono">
+                                {monthlyCount}
+                              </span>
+                              <span className="text-sm text-white/40 uppercase tracking-wider font-medium">
+                                Fragments
+                              </span>
+                            </div>
+                            <p className="mt-4 text-xs text-white/40 leading-relaxed font-light">
+                              Your emotional clearance for <span className="text-white/60 font-medium">{new Date().toLocaleString('default', { month: 'long' })}</span>.
+                            </p>
+                            <div className="mt-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400/60">
+                              <div className={cn(
+                                "w-1.5 h-1.5 rounded-full bg-emerald-400",
+                                !reduceMotion && "animate-pulse"
+                              )} />
+                              <span>Consistent Progress</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                            <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-2 font-bold">Lifetime</span>
+                            <span className="text-2xl font-light text-white mono">{userData.totalReleases}</span>
+                          </div>
+                          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                            <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-2 font-bold">Today</span>
+                            <span className="text-2xl font-light text-white mono">{dailyCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6 flex items-center gap-2">
+                        <User className="w-3 h-3" />
+                        Account Status
+                      </h3>
+                      <div className="relative p-8 rounded-[2rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                        
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-medium text-white/40 uppercase tracking-widest mb-1">Current Tier</span>
+                              <span className={cn(
+                                "text-lg font-bold uppercase tracking-[0.2em]",
+                                userData.tier === 'pro' ? "text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400" : "text-white/80"
+                              )}>
+                                {userData.tier}
+                              </span>
+                            </div>
+                            <div className={cn(
+                              "p-3 rounded-2xl border",
+                              userData.tier === 'pro' ? "bg-indigo-500/10 border-indigo-500/20" : "bg-white/5 border-white/10"
+                            )}>
+                              {userData.tier === 'pro' ? <Diamond className="w-5 h-5 text-indigo-400" /> : <User className="w-5 h-5 text-white/40" />}
+                            </div>
+                          </div>
+                          
+                          {userData.tier === 'free' ? (
+                            <button 
+                              onClick={() => { setShowStats(false); setShowProModal(true); }}
+                              className="w-full py-4 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)]"
+                            >
+                              Unlock Pro Access
+                            </button>
+                          ) : (
+                            <div className="py-3 px-4 rounded-xl bg-white/5 border border-white/5 text-center">
+                              <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">Pro Member</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+
+                  {/* Right Column: Settings */}
+                  <div className="lg:col-span-7 space-y-12">
+                    <section>
+                      <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold">
+                          Visual Preferences
+                        </h3>
+                        <div className="flex items-center gap-4 p-1 rounded-full bg-white/5 border border-white/5">
+                          <span className="pl-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Reduce Motion</span>
+                          <button
+                            onClick={() => setReduceMotion(!reduceMotion)}
+                            className={cn(
+                              "relative w-12 h-6 rounded-full transition-colors duration-300",
+                              reduceMotion ? "bg-emerald-500" : "bg-white/10"
+                            )}
+                          >
+                            <motion.div
+                              animate={{ x: reduceMotion ? 26 : 2 }}
+                              className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-8">
+                        {/* Real-time Theme Preview Card */}
+                        <div className="space-y-3">
+                          <span className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-bold ml-1">
+                            Live Preview
+                          </span>
+                          <ThemePreviewCard 
+                            theme={hoveredTheme || userData.theme} 
+                            reduceMotion={reduceMotion} 
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-xs font-medium text-white/60">Atmosphere</span>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => setShowOldThemes(!showOldThemes)} className="text-[10px] text-white/40 hover:text-white/80 uppercase tracking-wider transition-colors">
+                                {showOldThemes ? 'New Themes' : 'Old Themes'}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {(Object.keys(THEMES) as Theme[]).filter(t => showOldThemes ? THEMES[t].isOld : !THEMES[t].isOld).map((t) => {
+                              const theme = THEMES[t];
+                              const isLocked = theme.isPro && userData.tier === 'free';
+                              return (
+                                <button
+                                  key={t}
+                                  onMouseEnter={() => setHoveredTheme(t as Theme)}
+                                  onMouseLeave={() => setHoveredTheme(null)}
+                                  onClick={() => {
+                                    if (isLocked) {
+                                      setShowStats(false);
+                                      setShowProModal(true);
+                                    } else {
+                                      saveUserData({ theme: t });
+                                    }
+                                  }}
+                                  className={cn(
+                                    "group relative p-6 rounded-2xl border transition-all duration-500 overflow-hidden flex flex-col items-center justify-center gap-3",
+                                    userData.theme === t 
+                                      ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
+                                      : "border-white/5 hover:border-white/20",
+                                    isLocked && "opacity-50"
+                                  )}
+                                >
+                                  {/* Real Background Preview - Optimized for list */}
+                                  <div className="absolute inset-0 z-0 opacity-40 group-hover:opacity-60 transition-opacity">
+                                    <ThemePreview theme={t as Theme} />
+                                  </div>
+
+                                  <div className="relative z-10 flex flex-col items-center gap-2">
+                                    <div className={cn(
+                                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500",
+                                      userData.theme === t ? "bg-white/20 scale-110" : "bg-white/5 group-hover:bg-white/10"
+                                    )}>
+                                      {theme.icon}
+                                    </div>
+                                    <span className={cn(
+                                      "text-[10px] uppercase tracking-[0.2em] font-bold transition-colors",
+                                      userData.theme === t ? "text-white" : "text-white/40 group-hover:text-white/60"
+                                    )}>
+                                      {theme.name}
+                                    </span>
+                                    {isLocked && <Lock className="w-3 h-3 text-white/30" />}
+                                  </div>
+                                  
+                                  {userData.theme === t && (
+                                    <motion.div 
+                                      layoutId="theme-active"
+                                      className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent pointer-events-none z-[1]"
+                                    />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-xs font-medium text-white/60 mb-4">Release Animation</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {Object.keys(ANIMATIONS_CONFIG).map((animId) => {
+                              const anim = ANIMATIONS_CONFIG[animId];
+                              const isLocked = anim.isPro && userData.tier === 'free';
+                              return (
+                                <button
+                                  key={animId}
+                                  onMouseEnter={() => setHoveredAnim(animId)}
+                                  onMouseLeave={() => setHoveredAnim(null)}
+                                  onClick={() => {
+                                    if (isLocked) {
+                                      setShowStats(false);
+                                      setShowProModal(true);
+                                    } else {
+                                      saveUserData({ selectedAnimation: userData.selectedAnimation === animId ? 'random' : animId });
+                                    }
+                                  }}
+                                  className={cn(
+                                    "relative h-24 rounded-xl border text-[9px] uppercase tracking-widest font-bold transition-all overflow-hidden group",
+                                    userData.selectedAnimation === animId
+                                      ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                                      : "bg-white/[0.02] border-white/5 hover:border-white/20",
+                                    isLocked && "opacity-50"
+                                  )}
+                                >
+                                  {/* Live Preview Background */}
+                                  <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                                    {hoveredAnim === animId && (
+                                      <div className="scale-75 origin-center w-[133%] h-[133%] -translate-x-[12.5%] -translate-y-[12.5%]">
+                                        <ActiveAnimationComponent 
+                                          text="" 
+                                          theme={userData.theme} 
+                                          animKey={animId} 
+                                          isPreview={true}
+                                          reduceMotion={reduceMotion}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Label Overlay */}
+                                  <div className={cn(
+                                    "relative z-10 flex items-center justify-center h-full transition-all duration-500 px-2 text-center",
+                                    hoveredAnim === animId ? "bg-black/60" : "bg-black/20"
+                                  )}>
+                                    <div className="flex flex-col items-center gap-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={cn(
+                                          "transition-colors",
+                                          userData.selectedAnimation === animId ? "text-white" : "text-white/60 group-hover:text-white"
+                                        )}>
+                                          {anim.name}
+                                        </span>
+                                        {anim.isNew && (
+                                          <span className="px-1 py-0.5 rounded-[2px] bg-emerald-500/20 text-emerald-400 text-[7px] font-bold tracking-wider leading-none">
+                                            NEW
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isLocked && <Lock className="w-2.5 h-2.5 text-white/30" />}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="pt-12 border-t border-white/5">
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div className="flex items-center gap-8">
+                          <button
+                            onClick={() => setShowLogoutConfirm(true)}
+                            className="flex items-center gap-2 text-red-400/40 hover:text-red-400 text-[10px] uppercase tracking-[0.2em] font-black transition-all hover:translate-x-1"
+                          >
+                            <LogOut className="w-3 h-3" />
+                            Sign Out
+                          </button>
+                        </div>
+                        <div className="flex flex-col items-center md:items-end gap-1">
+                          <p className="text-[10px] text-white/20 font-bold uppercase tracking-[0.3em]">
+                            Anti-Journal v2.5.0
+                          </p>
+                          <p className="text-[9px] text-white/10 uppercase tracking-widest">
+                            Secure End-to-End Encryption Active
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setShowLogoutConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-gradient-to-b from-[#1a1025] to-[#0a0510] border border-red-500/30 rounded-3xl p-8 w-full max-w-sm shadow-[0_0_50px_rgba(239,68,68,0.15)] relative overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-red-700" />
+              
+              <h2 className="text-xl font-sans font-medium text-white mb-4">Are you sure you want to log out?</h2>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={performLogout}
+                  className="flex-1 py-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors"
+                >
+                  Log Out
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {showStats && (
+        {showProModal && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-            onClick={() => setShowStats(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setShowProModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-              className="bg-[#11051a] border border-purple-900/50 rounded-2xl p-6 w-full max-w-sm"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-gradient-to-b from-[#1a1025] to-[#0a0510] border border-purple-500/30 rounded-3xl p-8 w-full max-w-md shadow-[0_0_50px_rgba(168,85,247,0.15)] relative overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <h2 className="text-xl font-sans text-white mb-4">Settings & History</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-white text-sm font-sans">Reduce Motion</span>
-                  <button 
-                    onClick={() => setReduceMotion(!reduceMotion)}
-                    className={`w-10 h-5 rounded-full transition-colors ${reduceMotion ? 'bg-purple-600' : 'bg-white/20'}`}
-                  >
-                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${reduceMotion ? 'translate-x-5' : 'translate-x-1'}`} />
-                  </button>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-purple-400 to-blue-400" />
+              
+              <button onClick={() => setShowProModal(false)} className="absolute top-6 right-6 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+              
+              <div className="flex items-center gap-2 mb-2">
+                <div className="relative flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-amber-300 relative z-10" />
+                  <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-white text-sm font-sans">Total Releases: {stats.total}</h3>
+                <h2 className="text-xl font-sans font-medium text-white">Anti-Journal Pro</h2>
+              </div>
+              <p className="text-sm text-purple-200/60 mb-8">Deepen your release. Understand your mind.</p>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-white">The Void Log</h4>
+                    <p className="text-xs text-white/50 mt-0.5">Look back at your release history and metadata.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 group">
+                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                      10+ Premium Animations
+                      <div className="relative flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-amber-300 relative z-10 animate-pulse" />
+                        <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
+                      </div>
+                    </h4>
+                    <p className="text-xs text-white/50 mt-0.5">Unlock Blood Moon, Golden Rain, Matrix, and more.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 group">
+                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                      Trend Analysis
+                      <div className="relative flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-amber-300 relative z-10 animate-pulse" />
+                        <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
+                      </div>
+                    </h4>
+                    <p className="text-xs text-white/50 mt-0.5">Monthly insights on your emotional release patterns.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 group">
+                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                      Custom Themes
+                      <div className="relative flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-amber-300 relative z-10 animate-pulse" />
+                        <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
+                      </div>
+                    </h4>
+                    <p className="text-xs text-white/50 mt-0.5">Personalize your void with Aurora Glow, Deep Space, and more.</p>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setShowStats(false)} className="mt-6 w-full py-2 bg-white/10 rounded-lg text-white text-sm font-sans">Close</button>
+
+              <div className="bg-black/40 rounded-2xl p-4 border border-white/5 mb-6 flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-lg font-medium text-white">$4.99<span className="text-xs text-white/40 font-normal"> / month</span></div>
+                    <div className="text-xs text-emerald-400">Cancel anytime</div>
+                  </div>
+                </div>
+                
+                <PayPalSubscriptionButton 
+                  onApprove={handleProApproval}
+                />
+              </div>
             </motion.div>
           </motion.div>
         )}

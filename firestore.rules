@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - tier: string (required, 'free' or 'pro')
+    //   - totalReleases: number (required)
+    //   - theme: string (required)
+    //   - email: string (required)
+    //   - updatedAt: timestamp (optional)
+    //
+    // Collection: users/{userId}/history
+    // Document ID: {entryId}
+    // Fields:
+    //   - id: string (required)
+    //   - timestamp: number (required)
+    //   - snippet: string (required)
+    //   - animation: string (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "leonardoandresdiaz2606@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
+        );
+    }
+
+    function isValidUser(data) {
+      return data.tier in ['free', 'pro'] &&
+             data.totalReleases is number &&
+             (!('dailyReleases' in data) || data.dailyReleases is number) &&
+             (!('lastDailyUpdate' in data) || data.lastDailyUpdate is number) &&
+             (!('monthlyReleases' in data) || data.monthlyReleases is number) &&
+             (!('lastMonthlyUpdate' in data) || data.lastMonthlyUpdate is number) &&
+             data.theme is string &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() < 256)) &&
+             (!('role' in data) || (data.role is string && data.role.size() < 20)) &&
+             (!('paypalSubscriptionId' in data) || (data.paypalSubscriptionId is string && data.paypalSubscriptionId.size() < 100)) &&
+             (!('selectedAnimation' in data) || (data.selectedAnimation is string && data.selectedAnimation.size() < 50)) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidHistory(data) {
+      return data.keys().hasOnly(['id', 'timestamp', 'snippet', 'animation']) &&
+             data.keys().hasAll(['id', 'timestamp', 'snippet', 'animation']) &&
+             data.id is string &&
+             data.timestamp is number &&
+             data.snippet is string &&
+             data.snippet.size() < 200 &&
+             data.animation is string;
+    }
+
+    function isValidFragment(data) {
+      return data.keys().hasAll(['id', 'type', 'color', 'size', 'timestamp']) &&
+             data.id is string &&
+             data.type in ['seed', 'crystal', 'nebula', 'orb'] &&
+             data.color is string &&
+             data.size is number &&
+             data.timestamp is number &&
+             (!('intensity' in data) || data.intensity is number) &&
+             (!('ritualMode' in data) || data.ritualMode is string);
+    }
+
+    match /global/stats {
+      allow read: if true;
+      allow write: if isAuthenticated(); // In a real app, this would be more restricted or handled via Cloud Functions
+    }
+
+    match /users/{userId} {
+      // Users can only read their own profile
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can create their own profile if it's 'free' tier (unless admin)
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.keys().hasAll(['tier', 'totalReleases', 'theme', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate']) &&
+                    request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate']) &&
+                    (request.resource.data.tier == 'free' || isAdmin());
+      
+      // Users can update their own profile. 
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
+                    request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate']) &&
+                    (request.resource.data.tier == resource.data.tier || request.resource.data.tier == 'pro' || isAdmin()) &&
+                    (!('role' in request.resource.data) || request.resource.data.role == resource.data.role || isAdmin());
+      
+      allow delete: if isAdmin();
+
+      match /history/{entryId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidHistory(request.resource.data);
+        allow update: if isOwner(userId) && isValidHistory(request.resource.data);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /fragments/{fragmentId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidFragment(request.resource.data);
+        allow update: if isOwner(userId) && isValidFragment(request.resource.data);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    match /presence/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                    request.resource.data.keys().hasAll(['lastSeen', 'uid']) &&
+                    request.resource.data.uid == userId;
+    }
+  }
+}
