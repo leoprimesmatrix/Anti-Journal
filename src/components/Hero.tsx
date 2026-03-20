@@ -9,6 +9,7 @@ const Hero = () => {
   const [isTypingMessage, setIsTypingMessage] = useState(false);
   const [message, setMessage] = useState('');
   const [isSent, setIsSent] = useState(false);
+  const [contactEmail, setContactEmail] = useState('');
   
   // Sections refs for scrolling
   const featuresRef = useRef<HTMLDivElement>(null);
@@ -19,6 +20,16 @@ const Hero = () => {
     if (videoRef.current) {
       videoRef.current.playbackRate = 0.5;
     }
+
+    // Fetch config from server
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.contactEmail) {
+          setContactEmail(data.contactEmail);
+        }
+      })
+      .catch(err => console.error('Failed to fetch config:', err));
   }, []);
 
   const handleLogin = async () => {
@@ -32,8 +43,6 @@ const Hero = () => {
   const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  const contactEmail = (import.meta as any).env.VITE_CONTACT_EMAIL;
 
   const filterMessage = (text: string) => {
     const inappropriateWords = [
@@ -344,7 +353,7 @@ const Hero = () => {
                     ) : (
                       <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/40 leading-relaxed liquid-glass">
                         <p>Contact email is not configured yet.</p>
-                        <p className="mt-2">To enable this, add <strong>VITE_CONTACT_EMAIL</strong> to your AI Studio Secrets.</p>
+                        <p className="mt-2">To enable this, add <strong>CONTACT_EMAIL</strong> to your AI Studio Secrets.</p>
                       </div>
                     )}
                   </>

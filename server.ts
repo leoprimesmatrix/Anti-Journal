@@ -57,6 +57,15 @@ async function startServer() {
     res.json({ status: 'ok' });
   });
 
+  // Expose non-sensitive environment variables to the client
+  app.get('/api/config', (req, res) => {
+    res.json({
+      contactEmail: process.env.CONTACT_EMAIL || '',
+      paypalClientId: process.env.PAYPAL_CLIENT_ID || '',
+      paypalPlanId: process.env.PAYPAL_PLAN_ID || '',
+    });
+  });
+
   // PayPal Webhook Endpoint
   app.post('/api/webhooks/paypal', async (req, res) => {
     console.log('Received PayPal Webhook:', req.body.event_type);
