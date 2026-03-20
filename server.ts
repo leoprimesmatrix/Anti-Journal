@@ -60,10 +60,67 @@ async function startServer() {
   // Expose non-sensitive environment variables to the client
   app.get('/api/config', (req, res) => {
     res.json({
-      contactEmail: process.env.CONTACT_EMAIL || '',
       paypalClientId: process.env.PAYPAL_CLIENT_ID || '',
       paypalPlanId: process.env.PAYPAL_PLAN_ID || '',
     });
+  });
+
+  // Secure Contact Form Endpoint
+  app.post('/api/contact', async (req, res) => {
+    const { message, email: userEmail } = req.body;
+    const contactEmail = process.env.CONTACT_EMAIL;
+
+    if (!contactEmail) {
+      console.error('CONTACT_EMAIL environment variable is not set.');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    try {
+      // Forward the message to an email service (using FormSubmit as a proxy)
+      // This keeps the CONTACT_EMAIL secret on the server
+      const response = await fetch(`https://formsubmit.co/ajax/${contactEmail}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: 'New Message from Anti-Journal Landing Page',
+          message: message,
+          reply_to: userEmail || 'no-reply@anti-journal.com',
+          _template: 'table'
+        })
+      });
+
+      const text = await response.text();
+      let result;
+      
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        console.error('FormSubmit response was not JSON:', text);
+        return res.status(502).json({ 
+          error: 'Invalid response from email service',
+          details: text.substring(0, 100) 
+        });
+      }
+
+      if (result.success === 'true' || result.success === true) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(400).json({ 
+          error: result.message || 'Email service rejected the message',
+          success: false 
+        });
+      }
+    } catch (error) {
+      console.error('Error sending contact email:', error);
+      res.status(500).json({ error: 'Internal server error while sending message' });
+    }
   });
 
   // PayPal Webhook Endpoint

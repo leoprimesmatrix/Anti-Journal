@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
-import { ArrowRight, Shield, Zap, Moon, Sparkles, Target, Heart, Mail, X } from 'lucide-react';
+import { ArrowRight, Shield, Zap, Moon, Sparkles, Target, Heart, Mail, X, MessageSquare, Globe, Copy, Check } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { auth, googleProvider, signInWithPopup } from '../firebase';
@@ -15,7 +15,8 @@ const Hero = () => {
   const [isTypingMessage, setIsTypingMessage] = useState(false);
   const [message, setMessage] = useState('');
   const [isSent, setIsSent] = useState(false);
-  const [contactEmail, setContactEmail] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   
@@ -28,16 +29,6 @@ const Hero = () => {
     if (videoRef.current) {
       videoRef.current.playbackRate = 0.5;
     }
-
-    // Fetch config from server
-    fetch('/api/config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.contactEmail) {
-          setContactEmail(data.contactEmail);
-        }
-      })
-      .catch(err => console.error('Failed to fetch config:', err));
   }, []);
 
   const handleLogin = async () => {
@@ -70,17 +61,48 @@ const Hero = () => {
     setMessage(filterMessage(val));
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
     
-    const subject = encodeURIComponent("Message from Anti-Journal Landing Page");
-    const body = encodeURIComponent(message);
-    
-    window.location.href = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
-    setIsSent(true);
-    setTimeout(() => {
-      resetModal();
-    }, 2000);
+    setIsSending(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message.trim(),
+          email: auth.currentUser?.email || null,
+        }),
+      });
+
+      const text = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Server response was not JSON:', text);
+        throw new Error('Server returned an invalid response');
+      }
+
+      if (response.ok && data.success) {
+        setIsSent(true);
+        setTimeout(() => {
+          resetModal();
+        }, 3000);
+      } else {
+        throw new Error(data.error || 'Failed to send message');
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send message. Please try again later.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const resetModal = () => {
@@ -88,6 +110,8 @@ const Hero = () => {
     setIsTypingMessage(false);
     setMessage('');
     setIsSent(false);
+    setIsSending(false);
+    setError(null);
   };
 
   return (
@@ -357,31 +381,27 @@ const Hero = () => {
                       </p>
                     </div>
 
-                    {contactEmail ? (
-                      <button
-                        onClick={() => setIsTypingMessage(true)}
-                        className="block w-full py-4 rounded-full bg-white text-black font-medium hover:scale-[1.02] transition-transform text-center cursor-pointer"
-                      >
-                        Send us an Email
-                      </button>
-                    ) : (
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/40 leading-relaxed liquid-glass">
-                        <p>Contact email is not configured yet.</p>
-                        <p className="mt-2">To enable this, add <strong>CONTACT_EMAIL</strong> to your AI Studio Secrets.</p>
-                      </div>
-                    )}
+                    <button
+                      onClick={() => setIsTypingMessage(true)}
+                      className="block w-full py-4 rounded-full bg-white text-black font-medium hover:scale-[1.02] transition-transform text-center cursor-pointer"
+                    >
+                      Send us a Message
+                    </button>
                   </>
                 ) : isSent ? (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="py-12 space-y-4"
+                    className="py-12 space-y-4 text-center"
                   >
                     <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto liquid-glass">
                       <Zap className="w-8 h-8 text-emerald-400" />
                     </div>
-                    <h3 className="text-2xl font-display">Message Sent</h3>
-                    <p className="text-white/60 text-sm">Opening your email client...</p>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-display">Message Sent</h3>
+                      <p className="text-white/60 text-sm">Your message has been delivered directly to our inbox.</p>
+                      <p className="text-white/40 text-xs italic">We'll get back to you as soon as possible.</p>
+                    </div>
                   </motion.div>
                 ) : (
                   <motion.div 
@@ -403,20 +423,34 @@ const Hero = () => {
                       />
                     </div>
 
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => setIsTypingMessage(false)}
-                        className="flex-1 py-4 rounded-full border border-white/10 text-white/60 hover:bg-white/5 transition-colors cursor-pointer"
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={!message.trim()}
-                        className="flex-[2] py-4 rounded-full bg-white text-black font-medium hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 cursor-pointer"
-                      >
-                        Send Message
-                      </button>
+                    {error && (
+                      <p className="text-red-400 text-xs text-center">{error}</p>
+                    )}
+
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => setIsTypingMessage(false)}
+                          disabled={isSending}
+                          className="flex-1 py-4 rounded-full border border-white/10 text-white/60 hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          Back
+                        </button>
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!message.trim() || isSending}
+                          className="flex-[2] py-4 rounded-full bg-white text-black font-medium hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          {isSending ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : (
+                            <span>Send Message</span>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 )}
