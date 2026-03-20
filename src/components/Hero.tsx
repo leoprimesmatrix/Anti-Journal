@@ -122,7 +122,7 @@ const Hero = () => {
           webkit-playsinline="true"
           poster="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000"
           className="absolute inset-0 w-full h-full object-cover z-0 opacity-80"
-          src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAANCjMCqP1PudScdB08sbFwatTP6DWrGuF-AFTWEmOul4&exp=1773974400&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdCR0sAGcdiZiO8fHaLRNP-ktTihF-725e313ghWmxdosIWv3F"
+          src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAAAWaKYVumiRbX__v7D79pSEZVVC2ZBT68K8UtNGRKAC8&exp=1773985200&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdCcH3gGKFkRilERos38ug6bKeq5vz64w5qcjaq7wIYFRXfRuP"
         />
         <div className="absolute inset-0 bg-black/40 z-0" /> {/* Slight darkening for text readability */}
 
