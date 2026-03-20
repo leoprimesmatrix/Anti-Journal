@@ -12,7 +12,7 @@ function cn(...inputs: ClassValue[]) {
 const Hero = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(true);
   
   // Nav scroll behavior
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -39,8 +39,22 @@ const Hero = () => {
   const philosophyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 0.5;
+    const video = videoRef.current;
+    if (video) {
+      video.playbackRate = 0.5;
+      video.muted = true;
+      video.playsInline = true;
+      video.defaultPlaybackRate = 0.5; // Ensure it stays at 0.5x even if reloaded
+      
+      const playVideo = async () => {
+        try {
+          await video.play();
+        } catch (err) {
+          console.warn("Video autoplay was prevented.", err);
+        }
+      };
+      
+      playVideo();
     }
   }, []);
 
@@ -98,16 +112,14 @@ const Hero = () => {
           loop
           muted
           playsInline
-          webkit-playsinline="true"
           preload="auto"
-          onLoadedData={() => setIsVideoLoaded(true)}
           className={cn(
-            "absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700",
-            isVideoLoaded ? "opacity-80" : "opacity-0"
+            "absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000",
+            isVideoLoaded ? "opacity-60" : "opacity-0"
           )}
-          src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAAAWaKYVumiRbX__v7D79pSEZVVC2ZBT68K8UtNGRKAC8&exp=1773985200&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdCcH3gGKFkRilERos38ug6bKeq5vz64w5qcjaq7wIYFRXfRuP"
+          src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAADHXAVkMTSS7IfVtOjKAHLWM-xI1rtVS_y1Y8iv8jTX2&exp=1774028400&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdDFUlgMROzVaOYRWjVu91DGQFxQ3foSqble4YmksdlVhRZ0Bj"
         />
-        <div className="absolute inset-0 bg-black/40 z-0" /> {/* Slight darkening for text readability */}
+        <div className="absolute inset-0 bg-black/40 z-[1]" /> {/* Slight darkening for text readability */}
 
         <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center">
           <h1 className="animate-fade-rise text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] font-display font-normal text-white">
