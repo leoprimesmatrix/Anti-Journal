@@ -1051,7 +1051,7 @@ export const GlobalPulse = ({ totalReleases, onlineUsers }: { totalReleases: num
         />
       </div>
       <div className="flex flex-col">
-        <span className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-white/30 font-syne">Collective Void</span>
+        <span className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-white/30 font-syne">Global Released Thoughts Today</span>
         <div className="flex items-center gap-1 md:gap-2">
           <span className="text-[9px] md:text-[11px] font-mono text-white/50 tracking-tight">{totalReleases.toLocaleString()} <span className="hidden sm:inline">Burdened Thoughts Released</span><span className="sm:hidden">Released</span></span>
         </div>

@@ -1669,14 +1669,17 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
 
     // Get message based on tone
     const angryMessages = [
-      "The fire consumes it.", "Let the ash scatter.", "Your rage is absorbed.", "The heat dissipates.", "Breathe out the fire."
+      "The fire consumes it.", "Let the ash scatter.", "Your rage is absorbed.", "The heat dissipates.", "Breathe out the fire.",
+      "Release the tension.", "Feel the weight lift.", "Let the anger fade.", "You are in control.", "Breathe in... and out..."
     ];
     const sadMessages = [
-      "Tears lost in the void.", "The ache softens.", "You are held by the silence.", "Let the sorrow drift.", "It is okay to let go."
+      "Tears lost in the void.", "The ache softens.", "You are held by the silence.", "Let the sorrow drift.", "It is okay to let go.",
+      "Be kind to yourself.", "This too shall pass.", "You are not alone.", "Breathe in... and out...", "Write down your thoughts..."
     ];
     const neutralMessages = [
       "Breathe. It's gone.", "Lightness returns.", "The void is quiet.",
-      "Letting go is freedom.", "Clearer now.", "Peace found.", "Unburdened."
+      "Letting go is freedom.", "Clearer now.", "Peace found.", "Unburdened.",
+      "Breathe in... and out...", "Write down your thoughts...", "Focus on your breath.", "You are here. You are safe."
     ];
     const oracleMessages = [
       "The stars align in your favor.", "A new path reveals itself.", "The void answers with silence.", "Your question is the answer.", "Look within for the truth.", "The cosmos is indifferent.", "A shift in perspective is needed.", "Patience is your ally.", "The answer is obscured by clouds.", "Trust the journey."
@@ -1707,8 +1710,8 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       setTimeout(() => {
         clearInterval(breathInterval);
         setIsDestroyed(false);
-      }, 6000); // 6 seconds for breathing exercise
-    }, duration);
+      }, 21000); // 21 seconds (6s countdown + 15s breathing)
+    }, Math.max(500, duration - 1500));
   };
 
   const startHold = () => {
@@ -1841,7 +1844,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
               <ArrowUp className="w-5 h-5 rotate-45" />
             </div>
             <span className="font-bold tracking-tight text-lg">ANTI-JOURNAL</span>
-            <span className="text-[10px] uppercase tracking-widest text-white/40 ml-2 border border-white/10 px-2 py-0.5 rounded-full">Beta</span>
+            <span className="text-[10px] uppercase tracking-widest text-white/40 ml-2 border border-white/10 px-2 py-0.5 rounded-full">BETA</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-white/70">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
@@ -1924,7 +1927,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
 
   return (
     <div className={cn(
-      "h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000",
+      "h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000 no-scrollbar",
       currentTheme.bg,
       isEcoMode && "eco-mode"
     )} style={{ perspective: '2000px' }}>
@@ -2051,7 +2054,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-row overflow-x-auto w-full md:w-auto md:flex-wrap justify-start md:justify-center gap-2 mb-6 md:mb-8 z-30 no-scrollbar"
+                  className="flex flex-row overflow-x-auto md:overflow-x-hidden w-full md:w-auto md:flex-wrap justify-start md:justify-center gap-2 mb-6 md:mb-8 z-30 no-scrollbar"
                 >
                   {(Object.keys(RITUAL_MODES) as RitualMode[]).map(mode => (
                     <button
@@ -2092,7 +2095,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                   <textarea
                     ref={textareaRef} value={text} onChange={handleTextChange} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp}
                     disabled={activeAnims.length > 0}
-                    placeholder={ritualMode === 'oracle' ? "Ask the void..." : ritualMode === 'echo' ? "Whisper to the void..." : "Type to release..."}
+                    placeholder={ritualMode === 'oracle' ? "Ask the void..." : ritualMode === 'echo' ? "Whisper to the void..." : "Type your thoughts..."}
                     className={cn(
                       "w-full bg-transparent placeholder:text-white/30 text-lg md:text-2xl font-sans font-light resize-none focus:outline-none px-4 py-4 md:px-6 md:py-6 leading-relaxed relative z-10 transition-all duration-500 text-white",
                       ritualMode === 'heavy' && "font-syne font-bold tracking-tight",
@@ -2156,33 +2159,86 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
               initial={{ opacity: 0, scale: 0.9, y: 10 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 2, ease: "easeOut" }}
+              transition={{ duration: 1, ease: "easeOut" }}
               className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-50 bg-black/40"
             >
               <div className="relative flex items-center justify-center mb-16">
+                {/* Countdown */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, delay: 0 }}
+                  className="absolute flex flex-col items-center"
+                >
+                  <span className="text-white/60 font-mono text-sm tracking-[0.3em] uppercase">INHALE IN...</span>
+                  <span className="text-white/80 font-mono text-6xl tracking-tighter">3</span>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, delay: 2 }}
+                  className="absolute flex flex-col items-center"
+                >
+                  <span className="text-white/60 font-mono text-sm tracking-[0.3em] uppercase">INHALE IN...</span>
+                  <span className="text-white/80 font-mono text-6xl tracking-tighter">2</span>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, delay: 4 }}
+                  className="absolute flex flex-col items-center"
+                >
+                  <span className="text-white/60 font-mono text-sm tracking-[0.3em] uppercase">INHALE IN...</span>
+                  <span className="text-white/80 font-mono text-6xl tracking-tighter">1</span>
+                </motion.div>
+
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: [0.5, 2, 0.5], opacity: [0, 0.2, 0] }}
-                  transition={{ duration: 6, ease: "easeInOut", times: [0, 0.5, 1] }}
-                  className="absolute w-48 h-48 rounded-full border border-white/20"
+                  animate={{ 
+                    scale: [0.5, 0.5, 2, 2, 0.5], 
+                    opacity: [0, 0.4, 0.6, 0.6, 0] 
+                  }}
+                  transition={{ 
+                    duration: 21, 
+                    times: [0, 0.28, 0.52, 0.76, 1], 
+                    ease: "easeInOut" 
+                  }}
+                  className="absolute w-48 h-48 rounded-full border border-white/30"
                 />
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: [0.5, 1.5, 0.5], opacity: [0, 0.4, 0] }}
-                  transition={{ duration: 6, ease: "easeInOut", times: [0, 0.5, 1] }}
-                  className="absolute w-32 h-32 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)]"
+                  animate={{ 
+                    scale: [0.5, 0.5, 1.5, 1.5, 0.5], 
+                    opacity: [0, 0.6, 0.8, 0.8, 0] 
+                  }}
+                  transition={{ 
+                    duration: 21, 
+                    times: [0, 0.28, 0.52, 0.76, 1], 
+                    ease: "easeInOut" 
+                  }}
+                  className="absolute w-32 h-32 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)]"
                 />
                 <motion.p
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 3, ease: "easeInOut", times: [0, 0.5, 1] }}
-                  className="text-white/40 font-mono text-sm tracking-[0.3em] uppercase absolute"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 1, 0] }}
+                  transition={{ duration: 5, delay: 6, times: [0, 0.1, 0.9, 1] }}
+                  className="text-white/60 font-mono text-3xl tracking-[0.3em] uppercase absolute"
                 >
                   Inhale
                 </motion.p>
                 <motion.p
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 3, ease: "easeInOut", times: [0, 0.5, 1], delay: 3 }}
-                  className="text-white/40 font-mono text-sm tracking-[0.3em] uppercase absolute"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 1, 0] }}
+                  transition={{ duration: 5, delay: 11, times: [0, 0.1, 0.9, 1] }}
+                  className="text-white/60 font-mono text-3xl tracking-[0.3em] uppercase absolute"
+                >
+                  Hold
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 1, 0] }}
+                  transition={{ duration: 5, delay: 16, times: [0, 0.1, 0.9, 1] }}
+                  className="text-white/60 font-mono text-3xl tracking-[0.3em] uppercase absolute"
                 >
                   Exhale
                 </motion.p>
@@ -2209,7 +2265,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
             className={cn("absolute bottom-4 md:bottom-8 left-0 right-0 px-4 md:px-8 z-10 flex flex-row items-center justify-between gap-2 md:gap-0", currentTheme.text, "opacity-80")}
           >
             {/* Left: Progress */}
-            <div className="flex items-center gap-2 md:gap-4 font-sans text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] uppercase overflow-x-auto no-scrollbar justify-start shrink-0">
+            <div className="flex items-center gap-2 md:gap-4 font-sans text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] uppercase overflow-x-auto md:overflow-x-hidden md:flex-wrap no-scrollbar justify-start shrink-0">
               <div className="liquid-glass px-2 py-1.5 md:px-4 md:py-2 rounded-full flex items-center gap-1 md:gap-2 shrink-0">
                 <span className="whitespace-nowrap">
                   <span className="hidden md:inline">Thoughts cleared today:</span>
@@ -2738,6 +2794,11 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           </motion.div>
         )}
       </AnimatePresence>
+      <div className="fixed bottom-2 left-0 right-0 flex justify-center pointer-events-none z-[60]">
+        <span className="text-[8px] md:text-[10px] font-mono text-white/20 tracking-[0.2em] uppercase">
+          BETA • BUGS MAY OCCUR.
+        </span>
+      </div>
     </div>
   );
 }

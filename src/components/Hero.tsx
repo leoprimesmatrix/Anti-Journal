@@ -1,7 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { ArrowRight, Shield, Zap, Moon, Sparkles, Target, Heart, Mail, X } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { auth, googleProvider, signInWithPopup } from '../firebase';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const Hero = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -10,6 +16,8 @@ const Hero = () => {
   const [message, setMessage] = useState('');
   const [isSent, setIsSent] = useState(false);
   const [contactEmail, setContactEmail] = useState('');
+  
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   
   // Sections refs for scrolling
   const featuresRef = useRef<HTMLDivElement>(null);
@@ -83,7 +91,7 @@ const Hero = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20">
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20 no-scrollbar">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex flex-row justify-between items-center px-8 py-6 max-w-7xl mx-auto">
         <div className="text-3xl tracking-tight font-display text-white cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -120,8 +128,12 @@ const Hero = () => {
           muted
           playsInline
           webkit-playsinline="true"
-          poster="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000"
-          className="absolute inset-0 w-full h-full object-cover z-0 opacity-80"
+          preload="auto"
+          onLoadedData={() => setIsVideoLoaded(true)}
+          className={cn(
+            "absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700",
+            isVideoLoaded ? "opacity-80" : "opacity-0"
+          )}
           src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAAAWaKYVumiRbX__v7D79pSEZVVC2ZBT68K8UtNGRKAC8&exp=1773985200&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdCcH3gGKFkRilERos38ug6bKeq5vz64w5qcjaq7wIYFRXfRuP"
         />
         <div className="absolute inset-0 bg-black/40 z-0" /> {/* Slight darkening for text readability */}
