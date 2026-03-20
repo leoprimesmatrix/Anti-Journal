@@ -6,21 +6,100 @@
 import React, { useState, useEffect } from 'react';
 import Hero from './components/Hero';
 import AntiJournal from './components/AntiJournal';
+import AdminPanel from './components/AdminPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, onSnapshot, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'motion/react';
+import { Clock, ShieldOff, LogOut, Shield } from 'lucide-react';
+import { signOut } from 'firebase/auth';
+
+interface UserProfile {
+  approved: boolean;
+  isBanned: boolean;
+  email: string;
+  tier: string;
+  role?: string;
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    // Fetch admin email from server config
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.contactEmail) {
+          setAdminEmail(data.contactEmail);
+        }
+      })
+      .catch(err => console.error('Failed to fetch config:', err));
+
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      
+      if (currentUser) {
+        // Check if profile exists, if not create it
+        const userRef = doc(db, 'users', currentUser.uid);
+        
+        // Use onSnapshot to listen for approval/ban changes in real-time
+        const unsubProfile = onSnapshot(userRef, async (docSnap) => {
+          if (docSnap.exists()) {
+            setProfile(docSnap.data() as UserProfile);
+          } else {
+            // Create initial profile
+            const newProfile: UserProfile = {
+              email: currentUser.email || '',
+              tier: 'free',
+              approved: false,
+              isBanned: false,
+            };
+            
+            try {
+              await setDoc(userRef, {
+                ...newProfile,
+                totalReleases: 0,
+                dailyReleases: 0,
+                lastDailyUpdate: Date.now(),
+                monthlyReleases: 0,
+                lastMonthlyUpdate: Date.now(),
+                theme: 'void',
+                updatedAt: serverTimestamp(),
+              });
+              setProfile(newProfile);
+            } catch (error) {
+              console.error("Error creating profile:", error);
+            }
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("Error listening to profile:", error);
+          setLoading(false);
+        });
+
+        return () => unsubProfile();
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setShowAdmin(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -30,9 +109,94 @@ export default function App() {
     );
   }
 
+  const isAdmin = user && adminEmail && user.email === adminEmail;
+
+  // Admin View
+  if (isAdmin && showAdmin) {
+    return (
+      <ErrorBoundary>
+        <AdminPanel onBack={() => setShowAdmin(false)} />
+      </ErrorBoundary>
+    );
+  }
+
+  // Banned View
+  if (user && profile?.isBanned) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="max-w-md w-full liquid-glass p-12 rounded-[40px] border border-red-500/20 text-center space-y-8">
+          <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+            <ShieldOff className="w-10 h-10 text-red-400" />
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-4xl font-display tracking-tight">Access Revoked</h1>
+            <p className="text-white/40 leading-relaxed">
+              Your access to the Anti-Journal protocol has been suspended due to violations of the void's silence.
+            </p>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="w-full py-4 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Early Access Gate
+  if (user && !profile?.approved && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="max-w-md w-full liquid-glass p-12 rounded-[40px] border border-white/10 text-center space-y-8">
+          <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10 text-white/60" />
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-4xl font-display tracking-tight">Awaiting Entry</h1>
+            <p className="text-white/40 leading-relaxed">
+              Your request for early access is being processed. The void opens only when the balance is right. You will be notified once approved.
+            </p>
+          </div>
+          <div className="pt-4 space-y-4">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-white/30 italic">
+              "Patience is the first step into the silence."
+            </div>
+            <p className="text-[10px] text-white/20 uppercase tracking-widest">Your request is active and securely stored in the void.</p>
+            <button 
+              onClick={handleLogout}
+              className="w-full py-4 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+            <p className="text-[9px] text-white/10 uppercase tracking-[0.2em]">Signing out will not cancel your request</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ErrorBoundary>
-      {user ? <AntiJournal /> : <Hero />}
+      {user ? (
+        <>
+          <AntiJournal />
+          {isAdmin && (
+            <button 
+              onClick={() => setShowAdmin(true)}
+              className="fixed bottom-8 left-8 p-4 rounded-full liquid-glass border border-white/10 text-white/40 hover:text-white hover:scale-110 transition-all z-[100]"
+              title="Admin Protocol"
+            >
+              <Shield className="w-6 h-6" />
+            </button>
+          )}
+        </>
+      ) : (
+        <Hero />
+      )}
     </ErrorBoundary>
   );
 }

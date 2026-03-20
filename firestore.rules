@@ -36,10 +36,26 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (
-          (request.auth.token.email == "leonardoandresdiaz2606@gmail.com" && request.auth.token.email_verified == true) ||
+          request.auth.token.email == "leonardoandresdiaz2606@gmail.com" ||
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
         );
+    }
+
+    function isApproved() {
+      return isAuthenticated() && 
+             (isAdmin() || (
+               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('approved', false) == true
+             ));
+    }
+
+    function isNotBanned() {
+      return isAuthenticated() && 
+             (isAdmin() || (
+               !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBanned', false) == false
+             ));
     }
 
     function isValidUser(data) {
@@ -54,6 +70,8 @@ service cloud.firestore {
              (!('role' in data) || (data.role is string && data.role.size() < 20)) &&
              (!('paypalSubscriptionId' in data) || (data.paypalSubscriptionId is string && data.paypalSubscriptionId.size() < 100)) &&
              (!('selectedAnimation' in data) || (data.selectedAnimation is string && data.selectedAnimation.size() < 50)) &&
+             (!('approved' in data) || data.approved is bool) &&
+             (!('isBanned' in data) || data.isBanned is bool) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
@@ -88,31 +106,41 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isAdmin();
       
       // Users can create their own profile if it's 'free' tier (unless admin)
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
-                    request.resource.data.keys().hasAll(['tier', 'totalReleases', 'theme', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate']) &&
-                    request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate']) &&
-                    (request.resource.data.tier == 'free' || isAdmin());
+      allow create: if (isAdmin() || isOwner(userId)) && 
+                    isValidUser(request.resource.data) && 
+                    (isAdmin() || (
+                      request.resource.data.keys().hasAll(['tier', 'totalReleases', 'theme', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
+                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
+                      request.resource.data.tier == 'free' &&
+                      request.resource.data.approved == false &&
+                      request.resource.data.isBanned == false
+                    ));
       
-      // Users can update their own profile. 
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
-                    request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate']) &&
-                    (request.resource.data.tier == resource.data.tier || request.resource.data.tier == 'pro' || isAdmin()) &&
-                    (!('role' in request.resource.data) || request.resource.data.role == resource.data.role || isAdmin());
+      // Users can update their own profile, or admins can update any profile.
+      allow update: if (isAdmin() || (isOwner(userId) && isNotBanned())) && 
+                    isValidUser(request.resource.data) &&
+                    (isAdmin() || (
+                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
+                      (request.resource.data.tier == resource.data.tier || request.resource.data.tier == 'pro') &&
+                      (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
+                      (!('approved' in request.resource.data) || request.resource.data.approved == resource.data.approved) &&
+                      (!('isBanned' in request.resource.data) || request.resource.data.isBanned == resource.data.isBanned)
+                    ));
       
       allow delete: if isAdmin();
 
       match /history/{entryId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && isValidHistory(request.resource.data);
-        allow update: if isOwner(userId) && isValidHistory(request.resource.data);
-        allow delete: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isApproved() && isNotBanned() && isValidHistory(request.resource.data);
+        allow update: if isOwner(userId) && isApproved() && isNotBanned() && isValidHistory(request.resource.data);
+        allow delete: if (isOwner(userId) && isApproved() && isNotBanned()) || isAdmin();
       }
 
       match /fragments/{fragmentId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && isValidFragment(request.resource.data);
-        allow update: if isOwner(userId) && isValidFragment(request.resource.data);
-        allow delete: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isApproved() && isNotBanned() && isValidFragment(request.resource.data);
+        allow update: if isOwner(userId) && isApproved() && isNotBanned() && isValidFragment(request.resource.data);
+        allow delete: if (isOwner(userId) && isApproved() && isNotBanned()) || isAdmin();
       }
     }
 

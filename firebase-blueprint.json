@@ -47,9 +47,17 @@
         "selectedAnimation": {
           "type": "string",
           "description": "User's preferred release animation"
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "Whether the user has been approved for early access"
+        },
+        "isBanned": {
+          "type": "boolean",
+          "description": "Whether the user has been banned"
         }
       },
-      "required": ["tier", "totalReleases", "theme", "email"]
+      "required": ["tier", "totalReleases", "theme", "email", "approved", "isBanned"]
     },
     "HistoryEntry": {
       "title": "History Entry",
