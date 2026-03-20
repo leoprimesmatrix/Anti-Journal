@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
-import { ArrowRight, Shield, Zap, Moon, Sparkles, Target, Heart, Mail, X, MessageSquare, Globe, Copy, Check } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Shield, Zap, Target, Heart, X, Check } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { auth, googleProvider, signInWithPopup } from '../firebase';
@@ -11,14 +11,27 @@ function cn(...inputs: ClassValue[]) {
 
 const Hero = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  const [isTypingMessage, setIsTypingMessage] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isSent, setIsSent] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
+  const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  
+  // Nav scroll behavior
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsNavVisible(false);
+      } else {
+        setIsNavVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
   
   // Sections refs for scrolling
   const featuresRef = useRef<HTMLDivElement>(null);
@@ -43,81 +56,15 @@ const Hero = () => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const filterMessage = (text: string) => {
-    const inappropriateWords = [
-      'fuck', 'shit', 'asshole', 'bitch', 'cunt', 'dick', 'pussy', 'faggot', 'nigger', 'retard',
-      'bastard', 'slut', 'whore', 'motherfucker'
-    ];
-    let filteredText = text;
-    inappropriateWords.forEach(word => {
-      const regex = new RegExp(`\\b${word}\\b`, 'gi');
-      filteredText = filteredText.replace(regex, '***');
-    });
-    return filteredText;
-  };
-
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setMessage(filterMessage(val));
-  };
-
-  const handleSendMessage = async () => {
-    if (!message.trim()) return;
-    
-    setIsSending(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: message.trim(),
-          email: auth.currentUser?.email || null,
-        }),
-      });
-
-      const text = await response.text();
-      let data;
-      
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.error('Server response was not JSON:', text);
-        throw new Error('Server returned an invalid response');
-      }
-
-      if (response.ok && data.success) {
-        setIsSent(true);
-        setTimeout(() => {
-          resetModal();
-        }, 3000);
-      } else {
-        throw new Error(data.error || 'Failed to send message');
-      }
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send message. Please try again later.');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const resetModal = () => {
-    setIsContactModalOpen(false);
-    setIsTypingMessage(false);
-    setMessage('');
-    setIsSent(false);
-    setIsSending(false);
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20 no-scrollbar">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex flex-row justify-between items-center px-8 py-6 max-w-7xl mx-auto">
+      <motion.nav 
+        initial={{ y: 0, opacity: 1 }}
+        animate={{ y: isNavVisible ? 0 : -100, opacity: isNavVisible ? 1 : 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="fixed top-0 left-0 right-0 z-50 flex flex-row justify-between items-center px-8 py-6 max-w-7xl mx-auto"
+      >
         <div className="text-3xl tracking-tight font-display text-white cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           Anti-Journal<sup className="text-xs">®</sup>
         </div>
@@ -126,7 +73,7 @@ const Hero = () => {
           <button onClick={() => scrollToSection(featuresRef)} className="text-sm text-white/60 hover:text-white transition-colors">Features</button>
           <button onClick={() => scrollToSection(missionRef)} className="text-sm text-white/60 hover:text-white transition-colors">Mission</button>
           <button onClick={() => scrollToSection(philosophyRef)} className="text-sm text-white/60 hover:text-white transition-colors">Philosophy</button>
-          <button onClick={() => setIsContactModalOpen(true)} className="text-sm text-white/60 hover:text-white transition-colors">Reach Us</button>
+          <button onClick={() => setIsPlansModalOpen(true)} className="text-sm text-white/60 hover:text-white transition-colors">Plans</button>
         </div>
         <button 
           onClick={handleLogin}
@@ -140,7 +87,7 @@ const Hero = () => {
           </svg>
           Request Access
         </button>
-      </nav>
+      </motion.nav>
 
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center text-center px-6 pt-32 pb-40 overflow-hidden">
@@ -342,122 +289,106 @@ const Hero = () => {
         </div>
       </section>
 
-      {/* Contact Modal */}
+      {/* Plans Modal */}
       <AnimatePresence>
-        {isContactModalOpen && (
+        {isPlansModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={resetModal}
+              onClick={() => setIsPlansModalOpen(false)}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg liquid-glass p-8 rounded-3xl border border-white/10"
+              className="relative w-full max-w-4xl liquid-glass p-8 rounded-3xl border border-white/10 overflow-hidden"
             >
               <button 
-                onClick={resetModal}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors"
+                onClick={() => setIsPlansModalOpen(false)}
+                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors z-10 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="space-y-6 text-center">
-                {!isTypingMessage ? (
-                  <>
-                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto liquid-glass">
-                      <Mail className="w-8 h-8 text-white/80" />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-display">Ready to connect?</h3>
-                      <p className="text-white/60 text-sm leading-relaxed">
-                        We'd love to hear your thoughts, feedback, or just say hello. 
-                        Click below to start your message.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => setIsTypingMessage(true)}
-                      className="block w-full py-4 rounded-full bg-white text-black font-medium hover:scale-[1.02] transition-transform text-center cursor-pointer"
-                    >
-                      Send us a Message
-                    </button>
-                  </>
-                ) : isSent ? (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="py-12 space-y-4 text-center"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto liquid-glass">
-                      <Zap className="w-8 h-8 text-emerald-400" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-display">Message Sent</h3>
-                      <p className="text-white/60 text-sm">Your message has been delivered directly to our inbox.</p>
-                      <p className="text-white/40 text-xs italic">We'll get back to you as soon as possible.</p>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6 text-left"
-                  >
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-display text-center">Your Message</h3>
-                      <p className="text-white/40 text-[10px] uppercase tracking-widest text-center">Inappropriate content will be automatically filtered.</p>
-                    </div>
-
-                    <div className="relative liquid-glass rounded-2xl p-1">
-                      <textarea
-                        value={message}
-                        onChange={handleMessageChange}
-                        placeholder="Type your message here..."
-                        className="w-full h-48 p-6 rounded-xl bg-transparent text-white placeholder:text-white/20 focus:outline-none transition-colors resize-none custom-scrollbar"
-                      />
-                    </div>
-
-                    {error && (
-                      <p className="text-red-400 text-xs text-center">{error}</p>
-                    )}
-
-                    <div className="flex flex-col gap-3">
-                      <div className="flex gap-4">
-                        <button
-                          onClick={() => setIsTypingMessage(false)}
-                          disabled={isSending}
-                          className="flex-1 py-4 rounded-full border border-white/10 text-white/60 hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          Back
-                        </button>
-                        <button
-                          onClick={handleSendMessage}
-                          disabled={!message.trim() || isSending}
-                          className="flex-[2] py-4 rounded-full bg-white text-black font-medium hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
-                        >
-                          {isSending ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                              <span>Sending...</span>
-                            </>
-                          ) : (
-                            <span>Send Message</span>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                <p className="text-[10px] uppercase tracking-widest text-white/20 text-center">
-                  PrimeDev Studios &bull; Anti-Journal Protocol
+              <div className="text-center mb-12 relative z-10">
+                <h3 className="text-3xl md:text-4xl font-display mb-4">Choose Your Protocol</h3>
+                <p className="text-white/60 max-w-xl mx-auto">
+                  Begin your journey into the void. Upgrade to Pro for the ultimate release experience.
                 </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 text-left">
+                {/* Free Plan */}
+                <div className="p-8 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
+                  <div className="mb-8">
+                    <h4 className="text-xl font-display mb-2">Initiate</h4>
+                    <div className="text-3xl font-sans font-light mb-2">$0<span className="text-lg text-white/40">/forever</span></div>
+                    <p className="text-sm text-white/60">The core anti-journaling experience.</p>
+                  </div>
+                  <ul className="space-y-4 mb-8 flex-1">
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
+                      <span>Core release mechanics & hold-to-release</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
+                      <span>5 Base Themes (Stardust, Obsidian, Void, etc.)</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
+                      <span>Standard destruction animations</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
+                      <span>End-to-end ephemeral architecture</span>
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => { setIsPlansModalOpen(false); handleLogin(); }}
+                    className="w-full py-3 rounded-full border border-white/20 text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    Start Free
+                  </button>
+                </div>
+
+                {/* Pro Plan */}
+                <div className="p-8 rounded-2xl bg-gradient-to-b from-indigo-500/10 to-purple-500/10 border border-indigo-500/30 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] uppercase tracking-widest py-1 px-3 rounded-bl-lg font-bold">
+                    Recommended
+                  </div>
+                  <div className="mb-8">
+                    <h4 className="text-xl font-display mb-2 text-indigo-300">Pro Protocol</h4>
+                    <div className="text-3xl font-sans font-light mb-2">$4.99<span className="text-lg text-white/40">/month</span></div>
+                    <p className="text-sm text-white/60">Unlock the full cosmic void.</p>
+                  </div>
+                  <ul className="space-y-4 mb-8 flex-1">
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <span>Everything in Initiate</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <span>13+ Premium Themes (Liquid Glass, Nebula, Aurora, etc.)</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <span>Advanced physics & destruction animations</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <span>Exclusive ambient backgrounds & soundscapes</span>
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => { setIsPlansModalOpen(false); handleLogin(); }}
+                    className="w-full py-3 rounded-full bg-indigo-500 text-white hover:bg-indigo-600 transition-colors shadow-[0_0_20px_rgba(99,102,241,0.3)] cursor-pointer"
+                  >
+                    Upgrade in App
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
