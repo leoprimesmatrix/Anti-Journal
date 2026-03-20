@@ -57,6 +57,16 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
     }
   };
 
+  const handleUpdateTier = async (userId: string, newTier: string) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        tier: newTier
+      });
+    } catch (error) {
+      console.error("Error updating tier:", error);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -122,9 +132,10 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Users List */}
         <div className="rounded-3xl liquid-glass border border-white/10 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5">
@@ -172,9 +183,16 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-1">
                           <span className="text-sm text-white/60">{user.totalReleases} releases</span>
-                          <span className="text-[10px] text-white/20 uppercase tracking-widest">{user.tier} tier</span>
+                          <select
+                            value={user.tier}
+                            onChange={(e) => handleUpdateTier(user.id, e.target.value)}
+                            className="bg-white/5 border border-white/10 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/60 focus:outline-none focus:border-white/20 hover:text-white transition-colors cursor-pointer w-fit"
+                          >
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                          </select>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -208,6 +226,82 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                 </AnimatePresence>
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-white/5">
+            <AnimatePresence mode="popLayout">
+              {filteredUsers.map((user) => (
+                <motion.div 
+                  key={user.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="p-4 space-y-4 hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shrink-0">
+                        <UserIcon className="w-5 h-5 text-white/60" />
+                      </div>
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-sm font-medium truncate">{user.email}</span>
+                        <span className="text-[10px] text-white/20 font-mono truncate">{user.id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider ${
+                      user.approved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
+                    }`}>
+                      {user.approved ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {user.approved ? 'Approved' : 'Pending'}
+                    </div>
+                    {user.isBanned && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider bg-red-500/10 text-red-400">
+                        <ShieldOff className="w-3 h-3" />
+                        Banned
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 ml-auto">
+                      <span className="text-xs text-white/60">{user.totalReleases} releases</span>
+                      <select
+                        value={user.tier}
+                        onChange={(e) => handleUpdateTier(user.id, e.target.value)}
+                        className="bg-white/5 border border-white/10 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/60 focus:outline-none focus:border-white/20 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <option value="free">Free</option>
+                        <option value="pro">Pro</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+                    <button
+                      onClick={() => handleToggleApproval(user.id, user.approved)}
+                      className={`px-3 py-1.5 rounded-lg transition-colors text-xs uppercase tracking-wider flex items-center gap-1.5 ${
+                        user.approved 
+                          ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400' 
+                          : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400'
+                      }`}
+                    >
+                      {user.approved ? <><XCircle className="w-3.5 h-3.5" /> Revoke</> : <><CheckCircle className="w-3.5 h-3.5" /> Approve</>}
+                    </button>
+                    <button
+                      onClick={() => handleToggleBan(user.id, user.isBanned)}
+                      className={`px-3 py-1.5 rounded-lg transition-colors text-xs uppercase tracking-wider flex items-center gap-1.5 ${
+                        user.isBanned 
+                          ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400' 
+                          : 'bg-red-500/10 hover:bg-red-500/20 text-red-400'
+                      }`}
+                    >
+                      {user.isBanned ? <><Shield className="w-3.5 h-3.5" /> Unban</> : <><ShieldOff className="w-3.5 h-3.5" /> Ban</>}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
           
           {filteredUsers.length === 0 && !loading && (

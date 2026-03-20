@@ -183,16 +183,7 @@ export default function App() {
     <ErrorBoundary>
       {user ? (
         <>
-          <AntiJournal />
-          {isAdmin && (
-            <button 
-              onClick={() => setShowAdmin(true)}
-              className="fixed bottom-8 left-8 p-4 rounded-full liquid-glass border border-white/10 text-white/40 hover:text-white hover:scale-110 transition-all z-[100]"
-              title="Admin Protocol"
-            >
-              <Shield className="w-6 h-6" />
-            </button>
-          )}
+          <AntiJournal isAdmin={isAdmin} onShowAdmin={() => setShowAdmin(true)} />
         </>
       ) : (
         <Hero />

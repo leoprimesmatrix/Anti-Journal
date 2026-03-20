@@ -1023,8 +1023,8 @@ const PrismaticBurst = ({ text, theme, isPreview = false, reduceMotion = false }
 
 export const GlobalPulse = ({ totalReleases, onlineUsers }: { totalReleases: number, onlineUsers: number }) => {
   return (
-    <div className="flex items-center gap-4 z-50 pointer-events-none">
-      <div className="relative flex items-center justify-center">
+    <div className="flex items-center gap-2 md:gap-4 z-50 pointer-events-none">
+      <div className="relative flex items-center justify-center hidden sm:flex">
         <motion.div
           animate={{
             scale: [1, 1.5, 1],
@@ -1051,15 +1051,14 @@ export const GlobalPulse = ({ totalReleases, onlineUsers }: { totalReleases: num
         />
       </div>
       <div className="flex flex-col">
-        <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-syne">Collective Void</span>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono text-white/50 tracking-tight">{totalReleases.toLocaleString()} Burdened Thoughts Released</span>
-          <span className="text-[8px] text-white/10 font-mono italic">Resets daily</span>
+        <span className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-white/30 font-syne">Collective Void</span>
+        <div className="flex items-center gap-1 md:gap-2">
+          <span className="text-[9px] md:text-[11px] font-mono text-white/50 tracking-tight">{totalReleases.toLocaleString()} <span className="hidden sm:inline">Burdened Thoughts Released</span><span className="sm:hidden">Released</span></span>
         </div>
         {onlineUsers > 1 && (
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="flex items-center gap-1.5 mt-0.5 md:mt-1">
             <div className="w-1 h-1 rounded-full bg-emerald-500/50 animate-pulse" />
-            <span className="text-[9px] font-mono text-emerald-400/40 tracking-wider uppercase">{onlineUsers} Souls Online</span>
+            <span className="text-[8px] md:text-[9px] font-mono text-emerald-400/40 tracking-wider uppercase">{onlineUsers} <span className="hidden sm:inline">Souls Online</span><span className="sm:hidden">Online</span></span>
           </div>
         )}
       </div>

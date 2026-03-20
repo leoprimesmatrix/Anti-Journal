@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { ArrowUp, Lock, Sparkles, History, Palette, Activity, X, CheckCircle2, Zap, LogOut, TrendingUp, Twitter, Github, Mountain, Diamond, Orbit, Grid3X3, Waves, Layers, User, Eye } from 'lucide-react';
+import { ArrowUp, Lock, Sparkles, History, Palette, Activity, X, CheckCircle2, Zap, LogOut, TrendingUp, Twitter, Github, Mountain, Diamond, Orbit, Grid3X3, Waves, Layers, User, Eye, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, subDays, isSameMonth, isSameDay } from 'date-fns';
@@ -1226,7 +1226,7 @@ const playCosmicHum = () => {
   }
 };
 
-export default function AntiJournal() {
+export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolean, onShowAdmin?: () => void }) {
   const [text, setText] = useState('');
   const [isHolding, setIsHolding] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -1239,6 +1239,7 @@ export default function AntiJournal() {
   const [activeAnims, setActiveAnims] = useState<ActiveAnim[]>([]);
   const [isDestroyed, setIsDestroyed] = useState(false);
   const [aftermathMessage, setAftermathMessage] = useState('');
+  const [isZenMode, setIsZenMode] = useState(false);
   
   const [userData, setUserData] = useState<UserData>(defaultUserData);
   const [fragments, setFragments] = useState<Fragment[]>([]);
@@ -1299,7 +1300,6 @@ export default function AntiJournal() {
     
     return () => unsubscribe();
   }, [user]);
-  const [isZenMode, setIsZenMode] = useState(false);
   const [currentHeading, setCurrentHeading] = useState(HEADINGS[0]);
   const [currentSubheading, setCurrentSubheading] = useState(SUBHEADINGS[0]);
 
@@ -1893,7 +1893,7 @@ export default function AntiJournal() {
   }
 
   return (
-    <div className={cn("min-h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000", currentTheme.bg)} style={{ perspective: '2000px' }}>
+    <div className={cn("h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-1000", currentTheme.bg)} style={{ perspective: '2000px' }}>
       <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} />
       <VoidGarden fragments={fragments} reduceMotion={reduceMotion} />
       
@@ -1906,43 +1906,48 @@ export default function AntiJournal() {
         }}
       />
       
-      {/* Top Left: Global Pulse */}
+      {/* Top Bar: Global Pulse & Controls */}
       <AnimatePresence>
         {!isZenMode && !isDestroyed && activeAnims.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute top-8 left-8 z-50"
+            className="absolute top-0 left-0 right-0 p-4 md:p-8 flex flex-row justify-between items-start z-50 pointer-events-none"
           >
-            <GlobalPulse totalReleases={globalStats.totalReleases} onlineUsers={onlineUsers} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Top Right: Controls */}
-      <AnimatePresence>
-        {!isZenMode && !isDestroyed && activeAnims.length === 0 && user && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute top-8 right-8 z-50 flex items-center gap-3"
-          >
-            <button 
-              onClick={() => setShowStats(true)} 
-              className="liquid-glass px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <Activity className="w-3 h-3"/> Insights
-            </button>
-            <button 
-              onClick={() => setIsZenMode(true)}
-              className="liquid-glass px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <Eye className="w-3 h-3"/> Zen
-            </button>
-            <button 
-              onClick={handleLogout} 
-              className="liquid-glass px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <LogOut className="w-3 h-3"/>
-            </button>
+            <div className="pointer-events-auto shrink-0">
+              <GlobalPulse totalReleases={globalStats.totalReleases} onlineUsers={onlineUsers} />
+            </div>
+            
+            {user && (
+              <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 pointer-events-auto shrink-0">
+                <button 
+                  onClick={() => setShowStats(true)} 
+                  className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2"
+                >
+                  <Activity className="w-4 h-4 md:w-3 md:h-3"/> <span className="hidden md:inline">Insights</span>
+                </button>
+                <button 
+                  onClick={() => setIsZenMode(true)}
+                  className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2"
+                >
+                  <Eye className="w-4 h-4 md:w-3 md:h-3"/> <span className="hidden md:inline">Zen</span>
+                </button>
+                {isAdmin && onShowAdmin && (
+                  <button 
+                    onClick={onShowAdmin}
+                    className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-amber-400/60 hover:text-amber-400 transition-colors flex items-center gap-1.5 md:gap-2"
+                    title="Admin Protocol"
+                  >
+                    <Shield className="w-4 h-4 md:w-3 md:h-3"/> <span className="hidden md:inline">Admin</span>
+                  </button>
+                )}
+                <button 
+                  onClick={handleLogout} 
+                  className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2"
+                >
+                  <LogOut className="w-4 h-4 md:w-3 md:h-3"/> <span className="hidden md:inline">Logout</span>
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1988,8 +1993,7 @@ export default function AntiJournal() {
                 transition={{ duration: 0.2 }}
               />
 
-              {!isZenMode && (
-                <motion.div
+              {!isZenMode && (                <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ 
                     opacity: text || activeAnims.length > 0 ? 0 : 1, 
@@ -1997,12 +2001,12 @@ export default function AntiJournal() {
                     scale: text || activeAnims.length > 0 ? 0.95 : 1
                   }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="mb-8 md:mb-12 text-center pointer-events-none"
+                  className="mb-6 md:mb-12 text-center pointer-events-none px-4 md:px-0"
                 >
-                  <h2 className="text-3xl md:text-5xl font-serif italic text-white/90 tracking-tight leading-tight">
+                  <h2 className="text-2xl sm:text-3xl md:text-5xl font-serif italic text-white/90 tracking-tight leading-tight">
                     {currentHeading}
                   </h2>
-                  <p className={cn("mt-4 font-sans text-sm tracking-widest uppercase", currentTheme.text, "opacity-40")}>
+                  <p className={cn("mt-2 md:mt-4 font-sans text-[10px] md:text-sm tracking-widest uppercase", currentTheme.text, "opacity-40")}>
                     {currentSubheading}
                   </p>
                 </motion.div>
@@ -2013,14 +2017,14 @@ export default function AntiJournal() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-2 mb-8 z-30"
+                  className="flex flex-row overflow-x-auto w-full md:w-auto md:flex-wrap justify-start md:justify-center gap-2 mb-6 md:mb-8 z-30 no-scrollbar"
                 >
                   {(Object.keys(RITUAL_MODES) as RitualMode[]).map(mode => (
                     <button
                       key={mode}
                       onClick={() => setRitualMode(mode)}
                       className={cn(
-                        "px-4 py-2 rounded-full border text-[10px] uppercase tracking-widest transition-all flex items-center gap-2",
+                        "shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-full border text-[9px] md:text-[10px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2",
                         ritualMode === mode 
                           ? "bg-white text-black border-white" 
                           : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
@@ -2056,7 +2060,7 @@ export default function AntiJournal() {
                     disabled={activeAnims.length > 0}
                     placeholder={ritualMode === 'oracle' ? "Ask the void..." : ritualMode === 'echo' ? "Whisper to the void..." : "Type to release..."}
                     className={cn(
-                      "w-full bg-transparent placeholder:text-white/30 text-lg md:text-2xl font-sans font-light resize-none focus:outline-none px-6 py-6 leading-relaxed relative z-10 transition-all duration-500 text-white",
+                      "w-full bg-transparent placeholder:text-white/30 text-lg md:text-2xl font-sans font-light resize-none focus:outline-none px-4 py-4 md:px-6 md:py-6 leading-relaxed relative z-10 transition-all duration-500 text-white",
                       ritualMode === 'heavy' && "font-syne font-bold tracking-tight",
                       ritualMode === 'mist' && "font-fraunces italic opacity-60",
                       ritualMode === 'echo' && "hover:opacity-100 focus:opacity-100 opacity-50",
@@ -2070,14 +2074,14 @@ export default function AntiJournal() {
                   />
                   
                   {!isZenMode && (
-                    <div className="flex justify-between items-center px-4 pb-3 pt-2">
+                    <div className="flex justify-between items-center px-3 md:px-4 pb-2 md:pb-3 pt-1 md:pt-2">
                       <AnimatePresence>
                         {text.trim() ? (
                           <motion.span 
                             initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                            className={cn("text-[10px] font-sans uppercase tracking-[0.2em] ml-2 opacity-50 transition-colors", isHolding ? "text-red-400" : currentTheme.text)}
+                            className={cn("text-[8px] md:text-[10px] font-sans uppercase tracking-[0.2em] ml-1 md:ml-2 opacity-50 transition-colors", isHolding ? "text-red-400" : currentTheme.text)}
                           >
-                            {isHolding ? "Releasing..." : "Hold Enter or button to release"}
+                            {isHolding ? "Releasing..." : "Hold Enter or button"}
                           </motion.span>
                         ) : (
                           <span className="text-transparent text-[10px] font-sans uppercase tracking-[0.2em] ml-2 select-none">Placeholder</span>
@@ -2167,29 +2171,33 @@ export default function AntiJournal() {
         {!isZenMode && !isDestroyed && activeAnims.length === 0 && (
           <motion.footer 
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ delay: 1, duration: 1 }}
-            className={cn("absolute bottom-8 left-0 right-0 px-8 z-10 flex items-center justify-between", currentTheme.text, "opacity-80")}
+            className={cn("absolute bottom-4 md:bottom-8 left-0 right-0 px-4 md:px-8 z-10 flex flex-row items-center justify-between gap-2 md:gap-0", currentTheme.text, "opacity-80")}
           >
             {/* Left: Progress */}
-            <div className="flex items-center gap-4 font-sans text-[10px] tracking-[0.3em] uppercase">
-              <div className="liquid-glass px-4 py-2 rounded-full flex items-center gap-2">
-                <span className="whitespace-nowrap">Thoughts cleared today: <span className="font-medium ml-2 text-white">{dailyCount}</span></span>
+            <div className="flex items-center gap-2 md:gap-4 font-sans text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] uppercase overflow-x-auto no-scrollbar justify-start shrink-0">
+              <div className="liquid-glass px-2 py-1.5 md:px-4 md:py-2 rounded-full flex items-center gap-1 md:gap-2 shrink-0">
+                <span className="whitespace-nowrap">
+                  <span className="hidden md:inline">Thoughts cleared today:</span>
+                  <span className="md:hidden">Cleared:</span>
+                  <span className="font-medium ml-1 md:ml-2 text-white">{dailyCount}</span>
+                </span>
               </div>
               {userData.tier === 'free' && (
-                <button onClick={() => setShowProModal(true)} className="liquid-glass-strong px-4 py-2 rounded-full hover:scale-105 transition-transform flex items-center gap-1.5 text-amber-300">
-                  <Sparkles className="w-3 h-3" /> Upgrade
+                <button onClick={() => setShowProModal(true)} className="liquid-glass-strong px-2 py-1.5 md:px-4 md:py-2 rounded-full hover:scale-105 transition-transform flex items-center gap-1.5 text-amber-300 shrink-0">
+                  <Sparkles className="w-3 h-3" /> <span className="hidden sm:inline">Upgrade</span>
                 </button>
               )}
             </div>
 
             {/* Right: Socials */}
-            <div className="flex items-center gap-3">
-                  <a href="https://x.com/@PrimeDevv" target="_blank" rel="noopener noreferrer" className="liquid-glass w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                  <a href="https://x.com/@PrimeDevv" target="_blank" rel="noopener noreferrer" className="liquid-glass w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
                     <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 5.936H5.059z"></path></svg>
                   </a>
-                  <a href="https://www.instagram.com/officialprimedev/" target="_blank" rel="noopener noreferrer" className="liquid-glass w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
+                  <a href="https://www.instagram.com/officialprimedev/" target="_blank" rel="noopener noreferrer" className="liquid-glass w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
                     <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd"></path></svg>
                   </a>
-                  <a href="https://discord.gg/bcXduuG3Da" target="_blank" rel="noopener noreferrer" className="liquid-glass w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
+                  <a href="https://discord.gg/bcXduuG3Da" target="_blank" rel="noopener noreferrer" className="liquid-glass w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center hover:text-white transition-colors">
                     <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"></path></svg>
                   </a>
                 </div>
@@ -2214,7 +2222,7 @@ export default function AntiJournal() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[32px] border border-white/10 bg-[#0A0A0A] shadow-2xl flex flex-col"
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl md:rounded-[32px] border border-white/10 bg-[#0A0A0A] shadow-2xl flex flex-col"
               onClick={e => e.stopPropagation()}
             >
               {/* Liquid Glass Background Effect */}
@@ -2227,27 +2235,27 @@ export default function AntiJournal() {
 
               {/* Header */}
               <div className={cn(
-                "relative z-10 flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]",
+                "relative z-10 flex items-center justify-between p-5 md:p-8 border-b border-white/5 bg-white/[0.02]",
               )}>
                 <div>
-                  <h2 className="text-4xl font-light tracking-tight text-white serif">
+                  <h2 className="text-2xl md:text-4xl font-light tracking-tight text-white serif">
                     Insights <span className="italic opacity-50">&</span> Settings
                   </h2>
-                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/40 font-medium">
+                  <p className="mt-1 text-[9px] md:text-xs uppercase tracking-[0.2em] text-white/40 font-medium">
                     Personal Archive • Configuration
                   </p>
                 </div>
                 <button
                   onClick={() => setShowStats(false)}
-                  className="p-3 rounded-full border border-white/10 hover:bg-white/5 transition-colors group"
+                  className="p-2 md:p-3 rounded-full border border-white/10 hover:bg-white/5 transition-colors group"
                 >
-                  <X className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
+                  <X className="w-4 h-4 md:w-5 md:h-5 text-white/50 group-hover:text-white transition-colors" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="relative z-10 flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="relative z-10 flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
                   
                   {/* Left Column: Stats */}
                   <div className="lg:col-span-5 space-y-10">
@@ -2257,23 +2265,23 @@ export default function AntiJournal() {
                         Monthly Overview
                       </h3>
                       <div className="space-y-4">
-                        <div className="p-8 rounded-3xl bg-white/[0.03] border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-500">
+                        <div className="p-5 md:p-8 rounded-2xl md:rounded-3xl bg-white/[0.03] border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-500">
                           {/* Subtle Glow */}
                           <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full group-hover:opacity-100 opacity-50 transition-opacity duration-700" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)' }} />
                           
                           <div className="relative z-10">
-                            <div className="flex items-baseline gap-3">
-                              <span className="text-6xl font-light tracking-tighter text-white mono">
+                            <div className="flex items-baseline gap-2 md:gap-3">
+                              <span className="text-4xl md:text-6xl font-light tracking-tighter text-white mono">
                                 {monthlyCount}
                               </span>
-                              <span className="text-sm text-white/40 uppercase tracking-wider font-medium">
+                              <span className="text-xs md:text-sm text-white/40 uppercase tracking-wider font-medium">
                                 Fragments
                               </span>
                             </div>
-                            <p className="mt-4 text-xs text-white/40 leading-relaxed font-light">
+                            <p className="mt-3 md:mt-4 text-[10px] md:text-xs text-white/40 leading-relaxed font-light">
                               Your emotional clearance for <span className="text-white/60 font-medium">{new Date().toLocaleString('default', { month: 'long' })}</span>.
                             </p>
-                            <div className="mt-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400/60">
+                            <div className="mt-4 md:mt-6 flex items-center gap-2 text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-emerald-400/60">
                               <div className={cn(
                                 "w-1.5 h-1.5 rounded-full bg-emerald-400",
                                 !reduceMotion && "animate-pulse"
@@ -2283,14 +2291,14 @@ export default function AntiJournal() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-                            <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-2 font-bold">Lifetime</span>
-                            <span className="text-2xl font-light text-white mono">{userData.totalReleases}</span>
+                        <div className="grid grid-cols-2 gap-3 md:gap-4">
+                          <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                            <span className="block text-[9px] md:text-[10px] uppercase tracking-widest text-white/30 mb-1 md:mb-2 font-bold">Lifetime</span>
+                            <span className="text-xl md:text-2xl font-light text-white mono">{userData.totalReleases}</span>
                           </div>
-                          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-                            <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-2 font-bold">Today</span>
-                            <span className="text-2xl font-light text-white mono">{dailyCount}</span>
+                          <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                            <span className="block text-[9px] md:text-[10px] uppercase tracking-widest text-white/30 mb-1 md:mb-2 font-bold">Today</span>
+                            <span className="text-xl md:text-2xl font-light text-white mono">{dailyCount}</span>
                           </div>
                         </div>
                       </div>
@@ -2301,38 +2309,38 @@ export default function AntiJournal() {
                         <User className="w-3 h-3" />
                         Account Status
                       </h3>
-                      <div className="relative p-8 rounded-[2rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 overflow-hidden group">
+                      <div className="relative p-5 md:p-8 rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                         
                         <div className="relative z-10">
-                          <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center justify-between mb-5 md:mb-6">
                             <div className="flex flex-col">
-                              <span className="text-xs font-medium text-white/40 uppercase tracking-widest mb-1">Current Tier</span>
+                              <span className="text-[10px] md:text-xs font-medium text-white/40 uppercase tracking-widest mb-1">Current Tier</span>
                               <span className={cn(
-                                "text-lg font-bold uppercase tracking-[0.2em]",
+                                "text-base md:text-lg font-bold uppercase tracking-[0.2em]",
                                 userData.tier === 'pro' ? "text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400" : "text-white/80"
                               )}>
                                 {userData.tier}
                               </span>
                             </div>
                             <div className={cn(
-                              "p-3 rounded-2xl border",
+                              "p-2.5 md:p-3 rounded-xl md:rounded-2xl border",
                               userData.tier === 'pro' ? "bg-indigo-500/10 border-indigo-500/20" : "bg-white/5 border-white/10"
                             )}>
-                              {userData.tier === 'pro' ? <Diamond className="w-5 h-5 text-indigo-400" /> : <User className="w-5 h-5 text-white/40" />}
+                              {userData.tier === 'pro' ? <Diamond className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" /> : <User className="w-4 h-4 md:w-5 md:h-5 text-white/40" />}
                             </div>
                           </div>
                           
                           {userData.tier === 'free' ? (
                             <button 
                               onClick={() => { setShowStats(false); setShowProModal(true); }}
-                              className="w-full py-4 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)]"
+                              className="w-full py-3 md:py-4 rounded-xl bg-white text-black text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:bg-opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)]"
                             >
                               Unlock Pro Access
                             </button>
                           ) : (
-                            <div className="py-3 px-4 rounded-xl bg-white/5 border border-white/5 text-center">
-                              <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">Pro Member</span>
+                            <div className="py-2.5 md:py-3 px-4 rounded-xl bg-white/5 border border-white/5 text-center">
+                              <span className="text-[8px] md:text-[9px] uppercase tracking-widest text-white/40 font-bold">Pro Member</span>
                             </div>
                           )}
                         </div>
@@ -2385,7 +2393,7 @@ export default function AntiJournal() {
                               </button>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
                             {(Object.keys(THEMES) as Theme[]).filter(t => showOldThemes ? THEMES[t].isOld : !THEMES[t].isOld).map((t) => {
                               const theme = THEMES[t];
                               const isLocked = theme.isPro && userData.tier === 'free';
@@ -2403,7 +2411,7 @@ export default function AntiJournal() {
                                     }
                                   }}
                                   className={cn(
-                                    "group relative p-6 rounded-2xl border transition-all duration-500 overflow-hidden flex flex-col items-center justify-center gap-3",
+                                    "group relative p-4 md:p-6 rounded-xl md:rounded-2xl border transition-all duration-500 overflow-hidden flex flex-col items-center justify-center gap-2 md:gap-3",
                                     userData.theme === t 
                                       ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
                                       : "border-white/5 hover:border-white/20",
@@ -2415,20 +2423,20 @@ export default function AntiJournal() {
                                     <ThemePreview theme={t as Theme} />
                                   </div>
 
-                                  <div className="relative z-10 flex flex-col items-center gap-2">
+                                  <div className="relative z-10 flex flex-col items-center gap-1.5 md:gap-2">
                                     <div className={cn(
-                                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500",
+                                      "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-500",
                                       userData.theme === t ? "bg-white/20 scale-110" : "bg-white/5 group-hover:bg-white/10"
                                     )}>
                                       {theme.icon}
                                     </div>
                                     <span className={cn(
-                                      "text-[10px] uppercase tracking-[0.2em] font-bold transition-colors",
+                                      "text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold transition-colors text-center",
                                       userData.theme === t ? "text-white" : "text-white/40 group-hover:text-white/60"
                                     )}>
                                       {theme.name}
                                     </span>
-                                    {isLocked && <Lock className="w-3 h-3 text-white/30" />}
+                                    {isLocked && <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 text-white/30" />}
                                   </div>
                                   
                                   {userData.theme === t && (
@@ -2444,8 +2452,8 @@ export default function AntiJournal() {
                         </div>
 
                         <div>
-                          <span className="block text-xs font-medium text-white/60 mb-4">Release Animation</span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <span className="block text-[10px] md:text-xs font-medium text-white/60 mb-3 md:mb-4">Release Animation</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
                             {Object.keys(ANIMATIONS_CONFIG).map((animId) => {
                               const anim = ANIMATIONS_CONFIG[animId];
                               const isLocked = anim.isPro && userData.tier === 'free';
@@ -2463,7 +2471,7 @@ export default function AntiJournal() {
                                     }
                                   }}
                                   className={cn(
-                                    "relative h-24 rounded-xl border text-[9px] uppercase tracking-widest font-bold transition-all overflow-hidden group",
+                                    "relative h-20 md:h-24 rounded-xl border text-[8px] md:text-[9px] uppercase tracking-widest font-bold transition-all overflow-hidden group",
                                     userData.selectedAnimation === animId
                                       ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                                       : "bg-white/[0.02] border-white/5 hover:border-white/20",
@@ -2589,76 +2597,76 @@ export default function AntiJournal() {
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-gradient-to-b from-[#1a1025] to-[#0a0510] border border-purple-500/30 rounded-3xl p-8 w-full max-w-md shadow-[0_0_50px_rgba(168,85,247,0.15)] relative overflow-hidden"
+              className="bg-gradient-to-b from-[#1a1025] to-[#0a0510] border border-purple-500/30 rounded-2xl md:rounded-3xl p-6 md:p-8 w-full max-w-md shadow-[0_0_50px_rgba(168,85,247,0.15)] relative overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-purple-400 to-blue-400" />
               
-              <button onClick={() => setShowProModal(false)} className="absolute top-6 right-6 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowProModal(false)} className="absolute top-4 right-4 md:top-6 md:right-6 text-white/40 hover:text-white"><X className="w-4 h-4 md:w-5 md:h-5" /></button>
               
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1 md:mb-2">
                 <div className="relative flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-amber-300 relative z-10" />
+                  <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-amber-300 relative z-10" />
                   <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
                 </div>
-                <h2 className="text-xl font-sans font-medium text-white">Anti-Journal Pro</h2>
+                <h2 className="text-lg md:text-xl font-sans font-medium text-white">Anti-Journal Pro</h2>
               </div>
-              <p className="text-sm text-purple-200/60 mb-8">Deepen your release. Understand your mind.</p>
+              <p className="text-xs md:text-sm text-purple-200/60 mb-6 md:mb-8">Deepen your release. Understand your mind.</p>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+              <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                <div className="flex items-start gap-2.5 md:gap-3">
+                  <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 shrink-0" />
                   <div>
-                    <h4 className="text-sm font-medium text-white">The Void Log</h4>
-                    <p className="text-xs text-white/50 mt-0.5">Look back at your release history and metadata.</p>
+                    <h4 className="text-xs md:text-sm font-medium text-white">The Void Log</h4>
+                    <p className="text-[10px] md:text-xs text-white/50 mt-0.5">Look back at your release history and metadata.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 group">
-                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                <div className="flex items-start gap-2.5 md:gap-3 group">
+                  <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 shrink-0" />
                   <div>
-                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                    <h4 className="text-xs md:text-sm font-medium text-white flex items-center gap-1.5 md:gap-2">
                       10+ Premium Animations
                       <div className="relative flex items-center justify-center">
-                        <Sparkles className="w-3 h-3 text-amber-300 relative z-10 animate-pulse" />
+                        <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-amber-300 relative z-10 animate-pulse" />
                         <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
                       </div>
                     </h4>
-                    <p className="text-xs text-white/50 mt-0.5">Unlock Blood Moon, Golden Rain, Matrix, and more.</p>
+                    <p className="text-[10px] md:text-xs text-white/50 mt-0.5">Unlock Blood Moon, Golden Rain, Matrix, and more.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 group">
-                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                <div className="flex items-start gap-2.5 md:gap-3 group">
+                  <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 shrink-0" />
                   <div>
-                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                    <h4 className="text-xs md:text-sm font-medium text-white flex items-center gap-1.5 md:gap-2">
                       Trend Analysis
                       <div className="relative flex items-center justify-center">
-                        <Sparkles className="w-3 h-3 text-amber-300 relative z-10 animate-pulse" />
+                        <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-amber-300 relative z-10 animate-pulse" />
                         <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
                       </div>
                     </h4>
-                    <p className="text-xs text-white/50 mt-0.5">Monthly insights on your emotional release patterns.</p>
+                    <p className="text-[10px] md:text-xs text-white/50 mt-0.5">Monthly insights on your emotional release patterns.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 group">
-                  <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                <div className="flex items-start gap-2.5 md:gap-3 group">
+                  <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 shrink-0" />
                   <div>
-                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                    <h4 className="text-xs md:text-sm font-medium text-white flex items-center gap-1.5 md:gap-2">
                       Custom Themes
                       <div className="relative flex items-center justify-center">
-                        <Sparkles className="w-3 h-3 text-amber-300 relative z-10 animate-pulse" />
+                        <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-amber-300 relative z-10 animate-pulse" />
                         <div className="absolute inset-0 rounded-full animate-pulse opacity-40" style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)' }} />
                       </div>
                     </h4>
-                    <p className="text-xs text-white/50 mt-0.5">Personalize your void with Aurora Glow, Deep Space, and more.</p>
+                    <p className="text-[10px] md:text-xs text-white/50 mt-0.5">Personalize your void with Aurora Glow, Deep Space, and more.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-black/40 rounded-2xl p-4 border border-white/5 mb-6 flex flex-col gap-4">
+              <div className="bg-black/40 rounded-xl md:rounded-2xl p-3 md:p-4 border border-white/5 mb-4 md:mb-6 flex flex-col gap-3 md:gap-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="text-lg font-medium text-white">$4.99<span className="text-xs text-white/40 font-normal"> / month</span></div>
-                    <div className="text-xs text-emerald-400">Cancel anytime</div>
+                    <div className="text-base md:text-lg font-medium text-white">$4.99<span className="text-[10px] md:text-xs text-white/40 font-normal"> / month</span></div>
+                    <div className="text-[10px] md:text-xs text-emerald-400">Cancel anytime</div>
                   </div>
                 </div>
                 
