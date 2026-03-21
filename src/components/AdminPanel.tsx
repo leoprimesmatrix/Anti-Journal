@@ -12,6 +12,8 @@ interface UserProfile {
   approved: boolean;
   isBanned: boolean;
   totalReleases: number;
+  dailyReleases?: number;
+  lastDailyUpdate?: number;
   role?: string;
 }
 
@@ -74,6 +76,14 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
       console.error("Logout failed:", error);
     }
   };
+
+  const getResetPoint = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now.getTime();
+  };
+
+  const resetPointTime = getResetPoint();
 
   const filteredUsers = users.filter(user => 
     user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -184,7 +194,12 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          <span className="text-sm text-white/60">{user.totalReleases} releases</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-white/60">{user.totalReleases} total</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 border border-white/10">
+                              {(!user.lastDailyUpdate || user.lastDailyUpdate < resetPointTime) ? 0 : (user.dailyReleases || 0)} today
+                            </span>
+                          </div>
                           <select
                             value={user.tier}
                             onChange={(e) => handleUpdateTier(user.id, e.target.value)}
@@ -265,7 +280,12 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                       </div>
                     )}
                     <div className="flex items-center gap-2 ml-auto">
-                      <span className="text-xs text-white/60">{user.totalReleases} releases</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs text-white/60">{user.totalReleases} total</span>
+                        <span className="text-[10px] text-white/30">
+                          {(!user.lastDailyUpdate || user.lastDailyUpdate < resetPointTime) ? 0 : (user.dailyReleases || 0)} today
+                        </span>
+                      </div>
                       <select
                         value={user.tier}
                         onChange={(e) => handleUpdateTier(user.id, e.target.value)}

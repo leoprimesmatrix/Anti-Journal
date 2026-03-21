@@ -946,7 +946,7 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
             onLoadedMetadata={(e) => {
               e.currentTarget.playbackRate = 0.5;
             }}
-            src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAADHXAVkMTSS7IfVtOjKAHLWM-xI1rtVS_y1Y8iv8jTX2&exp=1774028400&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdDFUlgMROzVaOYRWjVu91DGQFxQ3foSqble4YmksdlVhRZ0Bj"
+            src="https://files.catbox.moe/a1dso1.mp4"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
         </div>
@@ -1285,7 +1285,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
   
   const [userData, setUserData] = useState<UserData>(defaultUserData);
   const [fragments, setFragments] = useState<Fragment[]>([]);
-  const [globalStats, setGlobalStats] = useState({ totalReleases: 0, lastReleaseAt: 0 });
+  const [globalStats, setGlobalStats] = useState({ totalReleases: 0, lastReleaseAt: 0, lastResetAt: 0 });
   const [ritualMode, setRitualMode] = useState<RitualMode>('standard');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1544,6 +1544,26 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     }
   }, [user]);
 
+  const getLocalResetPoint = useCallback(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now.getTime();
+  }, []);
+
+  const getGlobalResetPoint = useCallback(() => {
+    const now = new Date();
+    now.setUTCHours(0, 0, 0, 0);
+    return now.getTime();
+  }, []);
+
+  const currentGlobalReleases = useMemo(() => {
+    const resetPointTime = getGlobalResetPoint();
+    if ((globalStats.lastResetAt || 0) < resetPointTime) {
+      return 0;
+    }
+    return globalStats.totalReleases || 0;
+  }, [globalStats.totalReleases, globalStats.lastResetAt, getGlobalResetPoint]);
+
   const currentTheme = THEMES[userData.theme] || THEMES.void;
 
   const typingIntensity = useMemo(() => Math.min(text.length / 100, 1), [text]);
@@ -1627,6 +1647,9 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       ritualMode
     };
 
+    const localResetPoint = getLocalResetPoint();
+    const globalResetPoint = getGlobalResetPoint();
+
     try {
       // Add to history
       await addDoc(collection(db, 'users', user.uid, 'history'), {
@@ -1640,13 +1663,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       await addDoc(collection(db, 'users', user.uid, 'fragments'), newFragment);
 
       // Update total count
-      const resetPoint = new Date();
-      resetPoint.setUTCHours(7, 0, 0, 0);
-      if (Date.now() < resetPoint.getTime()) {
-        resetPoint.setUTCDate(resetPoint.getUTCDate() - 1);
-      }
-
-      const isNewDay = userData.lastDailyUpdate < resetPoint.getTime();
+      const isNewDay = userData.lastDailyUpdate < localResetPoint;
       const isNewMonth = !isSameMonth(new Date(userData.lastMonthlyUpdate), new Date());
       
       await updateDoc(doc(db, 'users', user.uid), {
@@ -1663,12 +1680,11 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       const globalSnap = await getDoc(globalRef);
       const now = Date.now();
       
-      // Use the same reset point for global
       if (globalSnap.exists()) {
         const data = globalSnap.data();
         const lastResetAt = data.lastResetAt || 0;
         
-        if (lastResetAt < resetPoint.getTime()) {
+        if (lastResetAt < globalResetPoint) {
           // Reset the global counter (Daily Global Releases)
           await updateDoc(globalRef, {
             totalReleases: 1,
@@ -1830,13 +1846,23 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
 
   const monthlyStats = getMonthlyStats();
   const dailyCount = useMemo(() => {
-    if (!isSameDay(new Date(userData.lastDailyUpdate), new Date())) {
+    const resetPointTime = getLocalResetPoint();
+    if (userData.lastDailyUpdate < resetPointTime) {
       return 0;
     }
     return userData.dailyReleases;
-  }, [userData.dailyReleases, userData.lastDailyUpdate]);
+  }, [userData.dailyReleases, userData.lastDailyUpdate, getLocalResetPoint]);
 
   const monthlyCount = useMemo(() => {
+    const now = new Date();
+    const resetPoint = new Date(now.getFullYear(), now.getMonth(), 1, 7, 0, 0, 0);
+    // If we are before the 1st of the month at 7 AM UTC, the reset point is the 1st of the previous month
+    const resetPointTime = resetPoint.getTime();
+    if (Date.now() < resetPointTime) {
+      // This is a bit complex for monthly, but let's stick to the simple version for now
+      // or just use isSameMonth if that's what handleDestroy does.
+    }
+    
     if (!isSameMonth(new Date(userData.lastMonthlyUpdate), new Date())) {
       return 0;
     }
@@ -1982,7 +2008,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
             className="absolute top-0 left-0 right-0 p-4 md:p-8 flex flex-row justify-between items-start z-50 pointer-events-none"
           >
             <div className="pointer-events-auto shrink-0">
-              <GlobalPulse totalReleases={globalStats.totalReleases} onlineUsers={onlineUsers} />
+              <GlobalPulse totalReleases={currentGlobalReleases} onlineUsers={onlineUsers} />
             </div>
             
             {user && (

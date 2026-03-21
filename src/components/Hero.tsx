@@ -117,7 +117,7 @@ const Hero = () => {
             "absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000",
             isVideoLoaded ? "opacity-60" : "opacity-0"
           )}
-          src="https://media.canva.com/v2/files/uri:ifs%3A%2F%2FV%2FOUrPSrvc_693Ez0hRqdI8xX0SX3axLXJNvNeBFrOEgA.mp4?csig=AAAAAAAAAAAAAAAAAAAAADHXAVkMTSS7IfVtOjKAHLWM-xI1rtVS_y1Y8iv8jTX2&exp=1774028400&signer=video-rpc&token=AAIAAVYAL09VclBTcnZjXzY5M0V6MGhScWRJOHhYMFNYM2F4TFhKTnZOZUJGck9FZ0EubXA0AAAAAAGdDFUlgMROzVaOYRWjVu91DGQFxQ3foSqble4YmksdlVhRZ0Bj"
+          src="https://files.catbox.moe/a1dso1.mp4"
         />
         <div className="absolute inset-0 bg-black/40 z-[1]" /> {/* Slight darkening for text readability */}
 
