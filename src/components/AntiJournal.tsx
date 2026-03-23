@@ -923,10 +923,11 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 transition-colors duration-1000" style={{ transform: 'translateZ(0)' }}>
       {/* Background Image for Serene Landscape */}
       {theme === 'sereneLandscape' && (
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 bg-stone-950">
           <img 
             src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000" 
             alt="Landscape" 
+            loading="eager"
             className="w-full h-full object-cover opacity-20 grayscale"
             referrerPolicy="no-referrer"
           />
@@ -936,12 +937,14 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
 
       {/* Background Video for Nebula Vortex */}
       {theme === 'nebulaVortex' && (
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 bg-black">
           <video
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
+            poster="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
             className="w-full h-full object-cover opacity-40"
             onLoadedMetadata={(e) => {
               e.currentTarget.playbackRate = 0.5;

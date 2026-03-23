@@ -12,7 +12,7 @@ function cn(...inputs: ClassValue[]) {
 const Hero = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(true);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   
   // Nav scroll behavior
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -113,9 +113,11 @@ const Hero = () => {
           muted
           playsInline
           preload="auto"
+          poster="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
+          onLoadedData={() => setIsVideoLoaded(true)}
           className={cn(
             "absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000",
-            isVideoLoaded ? "opacity-60" : "opacity-0"
+            isVideoLoaded ? "opacity-60" : "opacity-30"
           )}
           src="https://files.catbox.moe/a1dso1.mp4"
         />
