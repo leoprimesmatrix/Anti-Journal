@@ -10,6 +10,8 @@ import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged,
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, where } from 'firebase/firestore';
 import { ANIMATIONS_CONFIG, ActiveAnimationComponent, THEME_COLORS, GlobalPulse } from './ReleaseAnimations';
 import { VoidGarden, Fragment } from './VoidGarden';
+import { RITUAL_MODES } from './RitualSelector';
+import { useLanguage, Language } from '../contexts/LanguageContext';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -17,39 +19,19 @@ function cn(...inputs: ClassValue[]) {
 
 type RitualMode = 'heavy' | 'mist' | 'echo' | 'standard' | 'oracle';
 
-const RITUAL_MODES: Record<RitualMode, { name: string, description: string, icon: React.ReactNode }> = {
-  standard: { name: 'Standard', description: 'The classic void experience.', icon: <Zap className="w-4 h-4" /> },
-  heavy: { name: 'Heavy Lift', description: 'For deep trauma or intense anger.', icon: <Activity className="w-4 h-4" /> },
-  mist: { name: 'Morning Mist', description: 'For light anxieties and brain fog.', icon: <Sparkles className="w-4 h-4" /> },
-  echo: { name: 'Midnight Echo', description: 'For secrets and things unsaid.', icon: <History className="w-4 h-4" /> },
-  oracle: { name: 'The Oracle', description: 'Seek guidance from the void.', icon: <Eye className="w-4 h-4" /> },
-};
+type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift';
 
-const HEADINGS = [
-  "What's weighing on your mind?",
-  "What are you holding onto?",
-  "What needs to be released?",
-  "What's the heavy thought today?",
-  "Speak your truth to the silence.",
-  "What's echoing in your heart?",
-  "Let it all out here.",
-  "What's the burden you carry?",
-];
+const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, filter?: string, zoom?: boolean, playbackRate?: number, icon: React.ReactNode }> = {
+  // Live Atmospheres (Video Themes)
+  midnightSanctuary: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Midnight Sanctuary', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ckw6ym.mp4', filter: 'brightness(0.6) contrast(1.1)', icon: <Waves className="w-5 h-5" /> },
+  nocturnalHaven: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Nocturnal Haven', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/oj4c2s.mp4', filter: 'brightness(0.7) contrast(1.05)', icon: <Waves className="w-5 h-5" /> },
+  urbanSolitude: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Urban Solitude', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/r688ph.mp4', filter: 'brightness(0.6)', zoom: true, icon: <Waves className="w-5 h-5" /> },
+  felineVigil: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Feline Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/80u912.mp4', filter: 'brightness(0.6)', icon: <Waves className="w-5 h-5" /> },
+  transitEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Transit Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/wba8j2.mp4', filter: 'brightness(0.5)', icon: <Waves className="w-5 h-5" /> },
+  twilightLofi: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Twilight Lo-Fi', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/e6p8m1.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
+  sunsetDrift: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Drift', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/0ksawe.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
+  nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isPro: true, isLive: true, videoUrl: 'https://files.catbox.moe/a1dso1.mp4', playbackRate: 0.5, icon: <Orbit className="w-5 h-5" /> },
 
-const SUBHEADINGS = [
-  "The universe is listening.",
-  "The silence is your witness.",
-  "The stars will hold your secrets.",
-  "Release it to the infinite.",
-  "Your words belong to the void now.",
-  "Let the darkness consume the weight.",
-  "Find peace in the release.",
-  "The cosmos absorbs your heavy thoughts.",
-];
-
-type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex';
-
-const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, icon: React.ReactNode }> = {
   // New Premium Themes
   stardust: { bg: 'bg-[#020205]', accent: 'slate', text: 'text-slate-100', name: 'Stardust', isPro: false, icon: <Sparkles className="w-5 h-5" /> },
   retroGrid: { bg: 'bg-[#050505]', accent: 'emerald', text: 'text-emerald-400', name: 'Retro Grid', isPro: true, icon: <Grid3X3 className="w-5 h-5" /> },
@@ -57,7 +39,6 @@ const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: st
   sereneLandscape: { bg: 'bg-[#0a0a0a]', accent: 'stone', text: 'text-stone-100', name: 'Serene Landscape', isPro: true, icon: <Mountain className="w-5 h-5" /> },
   obsidian: { bg: 'bg-[#000000]', accent: 'zinc', text: 'text-zinc-400', name: 'Obsidian', isPro: false, icon: <Diamond className="w-5 h-5" /> },
   nebula: { bg: 'bg-[#05000a]', accent: 'pink', text: 'text-pink-100', name: 'Nebula', isPro: true, icon: <Orbit className="w-5 h-5" /> },
-  nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isPro: true, icon: <Orbit className="w-5 h-5" /> },
   
   // Refined Original Themes (Darker)
   liquidGlass: { bg: 'bg-[#000000]', accent: 'white', text: 'text-white', name: 'Liquid Glass', isPro: true, icon: <Layers className="w-5 h-5" /> },
@@ -770,6 +751,28 @@ const AuroraField = () => {
 };
 
 const ThemePreview = ({ theme }: { theme: Theme }) => {
+  const t = THEMES[theme];
+  
+  if (t?.isLive && t?.videoUrl) {
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className={cn(
+            "absolute min-w-full min-h-full object-cover opacity-60",
+            t.zoom && "scale-110"
+          )}
+          style={{ filter: t.filter }}
+        >
+          <source src={t.videoUrl} type="video/mp4" />
+        </video>
+      </div>
+    );
+  }
+
   const colors = ({
     stardust: ['#0f172a', '#1e293b', '#000000', '#334155'],
     retroGrid: ['#064e3b', '#065f46', '#000000', '#047857'],
@@ -790,6 +793,13 @@ const ThemePreview = ({ theme }: { theme: Theme }) => {
     ethereal: ['#0f172a', '#1e293b', '#010208', '#334155'],
     abyss: ['#09090b', '#18181b', '#020202', '#27272a'],
     nebulaVortex: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
+    midnightSanctuary: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
+    nocturnalHaven: ['#431407', '#7c2d12', '#000000', '#9a3412'],
+    urbanSolitude: ['#1e3a8a', '#172554', '#000000', '#1e40af'],
+    felineVigil: ['#18181b', '#27272a', '#000000', '#09090b'],
+    transitEchoes: ['#27272a', '#18181b', '#000000', '#09090b'],
+    twilightLofi: ['#2e1065', '#4c1d95', '#000000', '#1e1b4b'],
+    sunsetDrift: ['#7c2d12', '#431407', '#000000', '#9a3412'],
   } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
 
   return (
@@ -935,22 +945,30 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
         </div>
       )}
 
-      {/* Background Video for Nebula Vortex */}
-      {theme === 'nebulaVortex' && (
-        <div className="absolute inset-0 z-0 bg-black">
+      {/* Live Video Backgrounds */}
+      {THEMES[theme].isLive && THEMES[theme].videoUrl && (
+        <div className="absolute inset-0 z-0 bg-black overflow-hidden">
           <video
+            key={THEMES[theme].videoUrl}
             autoPlay
             loop
             muted
             playsInline
             preload="auto"
-            poster="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
-            className="w-full h-full object-cover opacity-40"
+            className={cn(
+              "w-full h-full object-cover transition-opacity duration-1000",
+              THEMES[theme].zoom ? "scale-110" : "scale-100",
+              theme === 'nebulaVortex' ? "opacity-40" : "opacity-60"
+            )}
             onLoadedMetadata={(e) => {
-              e.currentTarget.playbackRate = 0.5;
+              if (THEMES[theme].playbackRate) {
+                e.currentTarget.playbackRate = THEMES[theme].playbackRate;
+              }
             }}
-            src="https://files.catbox.moe/a1dso1.mp4"
-          />
+            style={{ filter: THEMES[theme].filter }}
+          >
+            <source src={THEMES[theme].videoUrl} type="video/mp4" />
+          </video>
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
         </div>
       )}
@@ -1272,6 +1290,7 @@ const playCosmicHum = () => {
 };
 
 export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolean, onShowAdmin?: () => void }) {
+  const { t, language, setLanguage } = useLanguage();
   const [text, setText] = useState('');
   const [isHolding, setIsHolding] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -1346,16 +1365,24 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     
     return () => unsubscribe();
   }, [user]);
-  const [currentHeading, setCurrentHeading] = useState(HEADINGS[0]);
-  const [currentSubheading, setCurrentSubheading] = useState(SUBHEADINGS[0]);
+  const ritualModes = useMemo(() => ({
+    standard: { name: t.ritualStandard, description: t.ritualStandardDesc, icon: <Zap className="w-4 h-4" /> },
+    heavy: { name: t.ritualHeavy, description: t.ritualHeavyDesc, icon: <Activity className="w-4 h-4" /> },
+    mist: { name: t.ritualMist, description: t.ritualMistDesc, icon: <Sparkles className="w-4 h-4" /> },
+    echo: { name: t.ritualEcho, description: t.ritualEchoDesc, icon: <History className="w-4 h-4" /> },
+    oracle: { name: t.ritualOracle, description: t.ritualOracleDesc, icon: <Eye className="w-4 h-4" /> },
+  }), [t]);
+
+  const [currentHeading, setCurrentHeading] = useState(t.headings[0]);
+  const [currentSubheading, setCurrentSubheading] = useState(t.subheadings[0]);
 
   useEffect(() => {
-    setCurrentHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
-    setCurrentSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
-  }, []);
+    setCurrentHeading(t.headings[Math.floor(Math.random() * t.headings.length)]);
+    setCurrentSubheading(t.subheadings[Math.floor(Math.random() * t.subheadings.length)]);
+  }, [t.headings, t.subheadings]);
   const [particles, setParticles] = useState<{id: number, x: number, y: number}[]>([]);
   
-  const [showOldThemes, setShowOldThemes] = useState(false);
+  const [themeTab, setThemeTab] = useState<'atmospheres' | 'live' | 'legacy'>('atmospheres');
   const [hoveredTheme, setHoveredTheme] = useState<Theme | null>(null);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1635,8 +1662,8 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     setText('');
 
     // Randomize next heading/subheading
-    setCurrentHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
-    setCurrentSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
+    setCurrentHeading(t.headings[Math.floor(Math.random() * t.headings.length)]);
+    setCurrentSubheading(t.subheadings[Math.floor(Math.random() * t.subheadings.length)]);
     
     // Create Fragment
     const fragmentType: Fragment['type'][] = ['seed', 'crystal', 'nebula', 'orb'];
@@ -2116,21 +2143,28 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-row overflow-x-auto md:overflow-x-hidden w-full md:w-auto md:flex-wrap justify-start md:justify-center gap-2 mb-6 md:mb-8 z-30 no-scrollbar"
                 >
-                  {(Object.keys(RITUAL_MODES) as RitualMode[]).map(mode => (
-                    <button
-                      key={mode}
-                      onClick={() => setRitualMode(mode)}
-                      className={cn(
-                        "shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-full border text-[9px] md:text-[10px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2",
-                        ritualMode === mode 
-                          ? "bg-white text-black border-white" 
-                          : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
-                      )}
-                    >
-                      {RITUAL_MODES[mode].icon}
-                      {RITUAL_MODES[mode].name}
-                    </button>
-                  ))}
+                    {(Object.keys(RITUAL_MODES) as RitualMode[]).map(mode => {
+                      const ritualName = mode === 'standard' ? t.ritualStandard :
+                                       mode === 'heavy' ? t.ritualHeavy :
+                                       mode === 'mist' ? t.ritualMist :
+                                       mode === 'echo' ? t.ritualEcho :
+                                       t.ritualOracle;
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => setRitualMode(mode)}
+                          className={cn(
+                            "shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-full border text-[9px] md:text-[10px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2",
+                            ritualMode === mode 
+                              ? "bg-white text-black border-white" 
+                              : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
+                          )}
+                        >
+                          {RITUAL_MODES[mode].icon}
+                          {ritualName}
+                        </button>
+                      );
+                    })}
                 </motion.div>
               )}
 
@@ -2583,16 +2617,51 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                         </div>
 
                         <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-medium text-white/60">Atmosphere</span>
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => setShowOldThemes(!showOldThemes)} className="text-[10px] text-white/40 hover:text-white/80 uppercase tracking-wider transition-colors">
-                                {showOldThemes ? 'New Themes' : 'Old Themes'}
-                              </button>
-                            </div>
+                          <div className="flex items-center gap-6 mb-6 border-b border-white/5 pb-3 overflow-x-auto scrollbar-hide">
+                            <button 
+                              onClick={() => setThemeTab('atmospheres')} 
+                              className={cn(
+                                "text-[10px] uppercase tracking-widest transition-all relative whitespace-nowrap",
+                                themeTab === 'atmospheres' ? "text-white font-bold" : "text-white/30 hover:text-white/60"
+                              )}
+                            >
+                              Atmospheres
+                              {themeTab === 'atmospheres' && (
+                                <motion.div layoutId="activeTab" className="absolute -bottom-3 left-0 right-0 h-0.5 bg-white/40" />
+                              )}
+                            </button>
+                            <button 
+                              onClick={() => setThemeTab('live')} 
+                              className={cn(
+                                "text-[10px] uppercase tracking-widest transition-all relative whitespace-nowrap",
+                                themeTab === 'live' ? "text-white font-bold" : "text-white/30 hover:text-white/60"
+                              )}
+                            >
+                              Live Atmospheres
+                              {themeTab === 'live' && (
+                                <motion.div layoutId="activeTab" className="absolute -bottom-3 left-0 right-0 h-0.5 bg-white/40" />
+                              )}
+                            </button>
+                            <button 
+                              onClick={() => setThemeTab('legacy')} 
+                              className={cn(
+                                "text-[10px] uppercase tracking-widest transition-all relative whitespace-nowrap",
+                                themeTab === 'legacy' ? "text-white font-bold" : "text-white/30 hover:text-white/60"
+                              )}
+                            >
+                              Legacy
+                              {themeTab === 'legacy' && (
+                                <motion.div layoutId="activeTab" className="absolute -bottom-3 left-0 right-0 h-0.5 bg-white/40" />
+                              )}
+                            </button>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
-                            {(Object.keys(THEMES) as Theme[]).filter(t => showOldThemes ? THEMES[t].isOld : !THEMES[t].isOld).map((t) => {
+                            {(Object.keys(THEMES) as Theme[]).filter(t => {
+                              const theme = THEMES[t];
+                              if (themeTab === 'live') return theme.isLive;
+                              if (themeTab === 'legacy') return theme.isOld;
+                              return !theme.isLive && !theme.isOld;
+                            }).map((t) => {
                               const theme = THEMES[t];
                               const isLocked = theme.isPro && userData.tier === 'free';
                               return (
