@@ -19,9 +19,9 @@ function cn(...inputs: ClassValue[]) {
 
 type RitualMode = 'heavy' | 'mist' | 'echo' | 'standard' | 'oracle';
 
-type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift';
+type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift' | 'woodlandRetreat' | 'oceanicHorizon' | 'cascadingSerenity' | 'snowboundSilence' | 'urbanEchoes' | 'sunsetVigil' | 'neonPulse' | 'celestialWhispers' | 'galacticBloom' | 'lunarTide';
 
-const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, filter?: string, zoom?: boolean, playbackRate?: number, icon: React.ReactNode }> = {
+const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, filter?: string, zoom?: boolean, playbackRate?: number, isGif?: boolean, noOverlay?: boolean, icon: React.ReactNode }> = {
   // Live Atmospheres (Video Themes)
   midnightSanctuary: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Midnight Sanctuary', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ckw6ym.mp4', filter: 'brightness(0.6) contrast(1.1)', icon: <Waves className="w-5 h-5" /> },
   nocturnalHaven: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Nocturnal Haven', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/oj4c2s.mp4', filter: 'brightness(0.7) contrast(1.05)', icon: <Waves className="w-5 h-5" /> },
@@ -30,6 +30,16 @@ const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: st
   transitEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Transit Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/wba8j2.mp4', filter: 'brightness(0.5)', icon: <Waves className="w-5 h-5" /> },
   twilightLofi: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Twilight Lo-Fi', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/e6p8m1.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
   sunsetDrift: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Drift', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/0ksawe.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
+  woodlandRetreat: { bg: 'bg-black', accent: 'emerald', text: 'text-emerald-100', name: 'Woodland Retreat', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/129ue0.mp4', filter: 'brightness(0.7)', icon: <Mountain className="w-5 h-5" /> },
+  oceanicHorizon: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Oceanic Horizon', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ekvzk3.mp4', filter: 'brightness(0.7)', icon: <Waves className="w-5 h-5" /> },
+  cascadingSerenity: { bg: 'bg-black', accent: 'teal', text: 'text-teal-100', name: 'Cascading Serenity', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/gzjamw.gif', filter: 'brightness(0.7)', zoom: true, isGif: true, icon: <Waves className="w-5 h-5" /> },
+  snowboundSilence: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Snowbound Silence', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/u4ujnb.gif', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  urbanEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Urban Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ipn54d.gif', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  sunsetVigil: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/fglfav.gif', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  neonPulse: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Neon Pulse', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/vfys71.gif', filter: 'brightness(0.6)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  celestialWhispers: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Celestial Whispers', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/amr3r5.gif', isGif: true, noOverlay: true, icon: <Sparkles className="w-5 h-5" /> },
+  galacticBloom: { bg: 'bg-black', accent: 'fuchsia', text: 'text-fuchsia-100', name: 'Galactic Bloom', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/l14uyj.gif', filter: 'brightness(0.85)', isGif: true, icon: <Orbit className="w-5 h-5" /> },
+  lunarTide: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Lunar Tide', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/klkmjo.gif', zoom: true, isGif: true, noOverlay: true, icon: <Waves className="w-5 h-5" /> },
   nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isPro: true, isLive: true, videoUrl: 'https://files.catbox.moe/a1dso1.mp4', playbackRate: 0.5, icon: <Orbit className="w-5 h-5" /> },
 
   // New Premium Themes
@@ -756,19 +766,32 @@ const ThemePreview = ({ theme }: { theme: Theme }) => {
   if (t?.isLive && t?.videoUrl) {
     return (
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className={cn(
-            "absolute min-w-full min-h-full object-cover opacity-60",
-            t.zoom && "scale-110"
-          )}
-          style={{ filter: t.filter }}
-        >
-          <source src={t.videoUrl} type="video/mp4" />
-        </video>
+        {t.isGif ? (
+          <img
+            src={t.videoUrl}
+            alt={t.name}
+            className={cn(
+              "absolute min-w-full min-h-full object-cover opacity-60",
+              t.zoom && "scale-110"
+            )}
+            style={{ filter: t.filter }}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={cn(
+              "absolute min-w-full min-h-full object-cover opacity-60",
+              t.zoom && "scale-110"
+            )}
+            style={{ filter: t.filter }}
+          >
+            <source src={t.videoUrl} type="video/mp4" />
+          </video>
+        )}
       </div>
     );
   }
@@ -800,6 +823,16 @@ const ThemePreview = ({ theme }: { theme: Theme }) => {
     transitEchoes: ['#27272a', '#18181b', '#000000', '#09090b'],
     twilightLofi: ['#2e1065', '#4c1d95', '#000000', '#1e1b4b'],
     sunsetDrift: ['#7c2d12', '#431407', '#000000', '#9a3412'],
+    woodlandRetreat: ['#064e3b', '#065f46', '#000000', '#047857'],
+    oceanicHorizon: ['#172554', '#1e3a8a', '#000000', '#1e40af'],
+    cascadingSerenity: ['#134e4a', '#0f766e', '#000000', '#115e59'],
+    snowboundSilence: ['#1e293b', '#0f172a', '#000000', '#334155'],
+    urbanEchoes: ['#18181b', '#09090b', '#000000', '#27272a'],
+    sunsetVigil: ['#7c2d12', '#431407', '#000000', '#9a3412'],
+    neonPulse: ['#2e1065', '#4c1d95', '#000000', '#1e1b4b'],
+    celestialWhispers: ['#1e1b4b', '#0f172a', '#000000', '#312e81'],
+    galacticBloom: ['#4c0519', '#2d0630', '#000000', '#701a75'],
+    lunarTide: ['#172554', '#1e3a8a', '#000000', '#1e40af'],
   } as Record<string, string[]>)[theme] || ['#0f172a', '#1e293b', '#000000', '#334155'];
 
   return (
@@ -948,28 +981,44 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
       {/* Live Video Backgrounds */}
       {THEMES[theme].isLive && THEMES[theme].videoUrl && (
         <div className="absolute inset-0 z-0 bg-black overflow-hidden">
-          <video
-            key={THEMES[theme].videoUrl}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            className={cn(
-              "w-full h-full object-cover transition-opacity duration-1000",
-              THEMES[theme].zoom ? "scale-110" : "scale-100",
-              theme === 'nebulaVortex' ? "opacity-40" : "opacity-60"
-            )}
-            onLoadedMetadata={(e) => {
-              if (THEMES[theme].playbackRate) {
-                e.currentTarget.playbackRate = THEMES[theme].playbackRate;
-              }
-            }}
-            style={{ filter: THEMES[theme].filter }}
-          >
-            <source src={THEMES[theme].videoUrl} type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+          {THEMES[theme].isGif ? (
+            <img
+              src={THEMES[theme].videoUrl}
+              alt={THEMES[theme].name}
+              className={cn(
+                "w-full h-full object-cover transition-opacity duration-1000",
+                THEMES[theme].zoom ? "scale-110" : "scale-100",
+                "opacity-60"
+              )}
+              style={{ filter: THEMES[theme].filter }}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <video
+              key={THEMES[theme].videoUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              className={cn(
+                "w-full h-full object-cover transition-opacity duration-1000",
+                THEMES[theme].zoom ? "scale-110" : "scale-100",
+                theme === 'nebulaVortex' ? "opacity-40" : "opacity-60"
+              )}
+              onLoadedMetadata={(e) => {
+                if (THEMES[theme].playbackRate) {
+                  e.currentTarget.playbackRate = THEMES[theme].playbackRate;
+                }
+              }}
+              style={{ filter: THEMES[theme].filter }}
+            >
+              <source src={THEMES[theme].videoUrl} type="video/mp4" />
+            </video>
+          )}
+          {!THEMES[theme].noOverlay && (
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+          )}
         </div>
       )}
 
