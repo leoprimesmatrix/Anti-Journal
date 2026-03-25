@@ -432,8 +432,11 @@ const Hero = () => {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/10 bg-black relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-2xl font-display text-white">
-            Anti-Journal<sup className="text-xs">®</sup>
+          <div className="text-2xl font-display text-white flex items-center gap-4">
+            <span>Anti-Journal<sup className="text-xs">®</sup></span>
+            <a href="#tv" className="text-[10px] text-white/10 hover:text-white/40 transition-colors uppercase tracking-widest font-sans">
+              [Monitor]
+            </a>
           </div>
           <div className="flex flex-col items-center md:items-end gap-2 text-sm text-white/40">
             <p>&copy; {new Date().getFullYear()} {t.footerCopyright}</p>

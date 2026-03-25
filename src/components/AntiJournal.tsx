@@ -22,24 +22,24 @@ type RitualMode = 'heavy' | 'mist' | 'echo' | 'standard' | 'oracle';
 
 type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift' | 'woodlandRetreat' | 'oceanicHorizon' | 'cascadingSerenity' | 'snowboundSilence' | 'urbanEchoes' | 'sunsetVigil' | 'neonPulse' | 'celestialWhispers' | 'galacticBloom' | 'lunarTide';
 
-const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, filter?: string, zoom?: boolean, playbackRate?: number, isGif?: boolean, noOverlay?: boolean, icon: React.ReactNode }> = {
+const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, audioUrl?: string, volume?: number, filter?: string, zoom?: boolean, playbackRate?: number, isGif?: boolean, noOverlay?: boolean, icon: React.ReactNode }> = {
   // Live Atmospheres (Video Themes)
-  midnightSanctuary: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Midnight Sanctuary', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ckw6ym.mp4', filter: 'brightness(0.6) contrast(1.1)', icon: <Waves className="w-5 h-5" /> },
-  nocturnalHaven: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Nocturnal Haven', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/oj4c2s.mp4', filter: 'brightness(0.7) contrast(1.05)', icon: <Waves className="w-5 h-5" /> },
+  midnightSanctuary: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Midnight Sanctuary', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ckw6ym.mp4', audioUrl: 'https://files.catbox.moe/rzwh3d.mp3', volume: 0.2, filter: 'brightness(0.6) contrast(1.1)', icon: <Waves className="w-5 h-5" /> },
+  nocturnalHaven: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Nocturnal Haven', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/oj4c2s.mp4', audioUrl: 'https://files.catbox.moe/2qxivc.mp3', filter: 'brightness(0.7) contrast(1.05)', icon: <Waves className="w-5 h-5" /> },
   urbanSolitude: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Urban Solitude', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/r688ph.mp4', filter: 'brightness(0.6)', zoom: true, icon: <Waves className="w-5 h-5" /> },
-  felineVigil: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Feline Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/80u912.mp4', filter: 'brightness(0.6)', icon: <Waves className="w-5 h-5" /> },
-  transitEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Transit Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/wba8j2.mp4', filter: 'brightness(0.5)', icon: <Waves className="w-5 h-5" /> },
-  twilightLofi: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Twilight Lo-Fi', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/e6p8m1.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
+  felineVigil: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Feline Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/80u912.mp4', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.6)', icon: <Waves className="w-5 h-5" /> },
+  transitEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Transit Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/wba8j2.mp4', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', filter: 'brightness(0.5)', icon: <Waves className="w-5 h-5" /> },
+  twilightLofi: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Twilight Lo-Fi', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/e6p8m1.mp4', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
   sunsetDrift: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Drift', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/0ksawe.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
   woodlandRetreat: { bg: 'bg-black', accent: 'emerald', text: 'text-emerald-100', name: 'Woodland Retreat', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/129ue0.mp4', filter: 'brightness(0.7)', icon: <Mountain className="w-5 h-5" /> },
   oceanicHorizon: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Oceanic Horizon', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ekvzk3.mp4', filter: 'brightness(0.7)', icon: <Waves className="w-5 h-5" /> },
-  cascadingSerenity: { bg: 'bg-black', accent: 'teal', text: 'text-teal-100', name: 'Cascading Serenity', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/gzjamw.gif', filter: 'brightness(0.7)', zoom: true, isGif: true, icon: <Waves className="w-5 h-5" /> },
-  snowboundSilence: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Snowbound Silence', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/u4ujnb.gif', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  cascadingSerenity: { bg: 'bg-black', accent: 'teal', text: 'text-teal-100', name: 'Cascading Serenity', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/gzjamw.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', zoom: true, isGif: true, icon: <Waves className="w-5 h-5" /> },
+  snowboundSilence: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Snowbound Silence', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/u4ujnb.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
   urbanEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Urban Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ipn54d.gif', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  sunsetVigil: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/fglfav.gif', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  neonPulse: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Neon Pulse', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/vfys71.gif', filter: 'brightness(0.6)', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  celestialWhispers: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Celestial Whispers', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/amr3r5.gif', isGif: true, noOverlay: true, icon: <Sparkles className="w-5 h-5" /> },
-  galacticBloom: { bg: 'bg-black', accent: 'fuchsia', text: 'text-fuchsia-100', name: 'Galactic Bloom', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/l14uyj.gif', filter: 'brightness(0.85)', isGif: true, icon: <Orbit className="w-5 h-5" /> },
+  sunsetVigil: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/fglfav.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  neonPulse: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Neon Pulse', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/vfys71.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.6)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  celestialWhispers: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Celestial Whispers', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/amr3r5.gif', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', isGif: true, noOverlay: true, icon: <Sparkles className="w-5 h-5" /> },
+  galacticBloom: { bg: 'bg-black', accent: 'fuchsia', text: 'text-fuchsia-100', name: 'Galactic Bloom', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/l14uyj.gif', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', filter: 'brightness(0.85)', isGif: true, icon: <Orbit className="w-5 h-5" /> },
   lunarTide: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Lunar Tide', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/klkmjo.gif', zoom: true, isGif: true, noOverlay: true, icon: <Waves className="w-5 h-5" /> },
   nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isPro: true, isLive: true, videoUrl: 'https://files.catbox.moe/a1dso1.mp4', playbackRate: 0.5, icon: <Orbit className="w-5 h-5" /> },
 
@@ -922,6 +922,48 @@ const ThemePreviewCard = ({ theme, reduceMotion = false }: { theme: Theme, reduc
 };
 
 const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: { theme: Theme, reduceMotion?: boolean, isEcoMode?: boolean }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !THEMES[theme].audioUrl) return;
+
+    audio.volume = THEMES[theme].volume ?? 1;
+
+    const handleInteraction = async () => {
+      try {
+        await audio.play();
+        removeListeners();
+      } catch (e) {
+        // Still blocked or other error
+      }
+    };
+
+    const removeListeners = () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+
+    const playAudio = async () => {
+      try {
+        await audio.play();
+      } catch (err) {
+        // Autoplay blocked - wait for first interaction
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('touchstart', handleInteraction);
+        window.addEventListener('keydown', handleInteraction);
+      }
+    };
+
+    playAudio();
+
+    return () => {
+      removeListeners();
+      audio.pause();
+    };
+  }, [theme, THEMES[theme].audioUrl]);
+
   const colors = ({
     stardust: ['#0f172a', '#1e293b', '#000000', '#334155'],
     retroGrid: ['#064e3b', '#065f46', '#000000', '#047857'],
@@ -1021,6 +1063,18 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: {
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
           )}
         </div>
+      )}
+
+      {/* Ambient Audio */}
+      {THEMES[theme].audioUrl && (
+        <audio
+          key={THEMES[theme].audioUrl}
+          src={THEMES[theme].audioUrl}
+          autoPlay
+          loop
+          className="hidden"
+          ref={audioRef}
+        />
       )}
 
       {/* Specialized Fields */}

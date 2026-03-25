@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import Hero from './components/Hero';
 import AntiJournal from './components/AntiJournal';
 import AdminPanel from './components/AdminPanel';
+import RetroMonitor from './components/RetroMonitor';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -29,8 +30,15 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [hashRoute, setHashRoute] = useState(window.location.hash);
 
   const isAdmin = user && adminEmail && user.email === adminEmail;
+
+  useEffect(() => {
+    const handleHashChange = () => setHashRoute(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   useEffect(() => {
     if (isAdmin && profile && profile.role !== 'admin' && user) {
@@ -116,6 +124,10 @@ export default function App() {
         <div className="w-1 h-1 rounded-full bg-white/20 animate-ping" />
       </div>
     );
+  }
+
+  if (hashRoute === '#tv') {
+    return <RetroMonitor />;
   }
 
   // Admin View
