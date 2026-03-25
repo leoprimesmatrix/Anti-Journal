@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  MidnightRain, EmberDrift, CityLightsBlur, WindowFrost, SubwayRush,
+  LofiGlitch, HighwaySpeed, ForestMist, TideWash, WaterfallCrash,
+  BlizzardSweep, NeonFlicker, GoldenHourFade, CyberpunkShatter,
+  MeteorShower, CosmicBloom, MoonlightRipple, VortexConsume, SingularityCollapse
+} from './LiveAtmosphereAnimations';
 
 export const THEME_COLORS = {
   liquidGlass: '#ffffff',
@@ -25,6 +31,8 @@ export const THEME_COLORS = {
 };
 
 export const ANIMATIONS_CONFIG: Record<string, { name: string, duration: number, description: string, isPro?: boolean, isNew?: boolean }> = {
+  vortexConsume: { name: 'Vortex Consume', duration: 5000, description: 'Pulled into the event horizon of a black hole.', isPro: true, isNew: true },
+  singularityCollapse: { name: 'Singularity Collapse', duration: 5000, description: 'Plunge into the event horizon of a collapsing star.', isPro: true, isNew: true },
   supernova: { name: 'Supernova', duration: 5000, description: 'A massive explosion of light and particles.', isPro: false },
   incinerate: { name: 'Incinerate', duration: 6000, description: 'Burn your words to ash in a roaring fire.', isPro: false },
   nebula: { name: 'Nebula Dissolve', duration: 6000, description: 'Melt into a massive, colorful cosmic cloud.', isPro: false },
@@ -41,6 +49,25 @@ export const ANIMATIONS_CONFIG: Record<string, { name: string, duration: number,
   cherryBlossom: { name: 'Cherry Blossom', duration: 6000, description: 'Fade gently into falling petals.', isPro: true, isNew: true },
   glacialFreeze: { name: 'Glacial Freeze', duration: 5000, description: 'Freeze over and crack into ice.', isPro: true, isNew: true },
   prismaticBurst: { name: 'Prismatic Burst', duration: 4000, description: 'Explode into a spectrum of vibrant colors.', isPro: true, isNew: true },
+  
+  // Live Atmosphere Specific Animations
+  midnightRain: { name: 'Midnight Rain', duration: 5000, description: 'Wash away your thoughts like rain on a window.', isPro: false, isNew: true },
+  emberDrift: { name: 'Ember Drift', duration: 5500, description: 'Let your words evaporate into warm steam.', isPro: false, isNew: true },
+  cityLightsBlur: { name: 'City Lights Blur', duration: 4500, description: 'Dissolve into the blurred bokeh of urban nights.', isPro: false, isNew: true },
+  windowFrost: { name: 'Window Frost', duration: 6000, description: 'Freeze over and slowly melt away.', isPro: false, isNew: true },
+  subwayRush: { name: 'Subway Rush', duration: 4000, description: 'Swept away by the speed of a passing train.', isPro: false, isNew: true },
+  lofiGlitch: { name: 'Lo-Fi Glitch', duration: 4500, description: 'A nostalgic, VHS-style distortion.', isPro: false, isNew: true },
+  highwaySpeed: { name: 'Highway Speed', duration: 5000, description: 'Speed away into the warm colors of dusk.', isPro: false, isNew: true },
+  forestMist: { name: 'Forest Mist', duration: 6000, description: 'Enveloped and hidden by a dense, quiet fog.', isPro: false, isNew: true },
+  tideWash: { name: 'Tide Wash', duration: 5500, description: 'Washed out to sea by a gentle wave.', isPro: false, isNew: true },
+  waterfallCrash: { name: 'Waterfall Crash', duration: 5000, description: 'Plunge into the rushing waters below.', isPro: false, isNew: true },
+  blizzardSweep: { name: 'Blizzard Sweep', duration: 5500, description: 'Scattered by a sudden, freezing wind.', isPro: false, isNew: true },
+  neonFlicker: { name: 'Neon Flicker', duration: 4000, description: 'Buzz, flicker, and short-circuit into darkness.', isPro: false, isNew: true },
+  goldenHourFade: { name: 'Golden Hour Fade', duration: 6000, description: 'Fade softly into the warm, setting sun.', isPro: false, isNew: true },
+  cyberpunkShatter: { name: 'Cyberpunk Shatter', duration: 4500, description: 'Fragment into glowing, neon data shards.', isPro: false, isNew: true },
+  meteorShower: { name: 'Meteor Shower', duration: 8000, description: 'Burn up upon atmospheric entry.', isPro: false, isNew: true },
+  cosmicBloom: { name: 'Cosmic Bloom', duration: 6000, description: 'Expand into a beautiful, stellar nursery.', isPro: false, isNew: true },
+  moonlightRipple: { name: 'Moonlight Ripple', duration: 5500, description: 'Distorted and lost in the reflection of the moon.', isPro: false, isNew: true },
 };
 
 const Supernova = ({ text, theme, intensity = 1, isPreview = false, reduceMotion = false }: { text: string, theme: string, intensity?: number, isPreview?: boolean, reduceMotion?: boolean }) => {
@@ -1261,6 +1288,25 @@ export const ActiveAnimationComponent = ({ text, theme, animKey, intensity = 1, 
     case 'cherryBlossom': return <CherryBlossom text={text} theme={theme} intensity={intensity} isPreview={isPreview} reduceMotion={reduceMotion} />;
     case 'glacialFreeze': return <GlacialFreeze text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
     case 'prismaticBurst': return <PrismaticBurst text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'midnightRain': return <MidnightRain text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'emberDrift': return <EmberDrift text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'cityLightsBlur': return <CityLightsBlur text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'windowFrost': return <WindowFrost text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'subwayRush': return <SubwayRush text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'lofiGlitch': return <LofiGlitch text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'highwaySpeed': return <HighwaySpeed text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'forestMist': return <ForestMist text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'tideWash': return <TideWash text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'waterfallCrash': return <WaterfallCrash text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'blizzardSweep': return <BlizzardSweep text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'neonFlicker': return <NeonFlicker text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'goldenHourFade': return <GoldenHourFade text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'cyberpunkShatter': return <CyberpunkShatter text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'meteorShower': return <MeteorShower text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'cosmicBloom': return <CosmicBloom text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'moonlightRipple': return <MoonlightRipple text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'vortexConsume': return <VortexConsume text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
+    case 'singularityCollapse': return <SingularityCollapse text={text} theme={theme} isPreview={isPreview} reduceMotion={reduceMotion} />;
     default: return <Nebula text={text} theme={theme} intensity={intensity} isPreview={isPreview} reduceMotion={reduceMotion} />;
   }
 };

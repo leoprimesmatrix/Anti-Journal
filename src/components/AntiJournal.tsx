@@ -8,6 +8,7 @@ import { twMerge } from 'tailwind-merge';
 import { format, subDays, isSameMonth, isSameDay } from 'date-fns';
 import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, FirebaseUser, handleFirestoreError, OperationType } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, where } from 'firebase/firestore';
+import { LiquidMetalShader } from './LiquidMetalShader';
 import { ANIMATIONS_CONFIG, ActiveAnimationComponent, THEME_COLORS, GlobalPulse } from './ReleaseAnimations';
 import { VoidGarden, Fragment } from './VoidGarden';
 import { RITUAL_MODES } from './RitualSelector';
@@ -1338,6 +1339,27 @@ const playCosmicHum = () => {
   }
 };
 
+const THEME_ANIMATION_MAP: Record<string, string> = {
+  midnightSanctuary: 'midnightRain',
+  nocturnalHaven: 'emberDrift',
+  urbanSolitude: 'cityLightsBlur',
+  felineVigil: 'windowFrost',
+  transitEchoes: 'subwayRush',
+  twilightLofi: 'lofiGlitch',
+  sunsetDrift: 'highwaySpeed',
+  woodlandRetreat: 'forestMist',
+  oceanicHorizon: 'tideWash',
+  cascadingSerenity: 'waterfallCrash',
+  snowboundSilence: 'blizzardSweep',
+  urbanEchoes: 'neonFlicker',
+  sunsetVigil: 'goldenHourFade',
+  neonPulse: 'cyberpunkShatter',
+  celestialWhispers: 'meteorShower',
+  galacticBloom: 'cosmicBloom',
+  lunarTide: 'moonlightRipple',
+  nebulaVortex: 'vortexConsume',
+};
+
 export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolean, onShowAdmin?: () => void }) {
   const { t, language, setLanguage } = useLanguage();
   const [text, setText] = useState('');
@@ -1694,7 +1716,9 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       if (ritualMode === 'oracle') selectedProfile = 'singularity';
       else if (tone === 'angry') selectedProfile = 'incinerate';
       else if (tone === 'sad') selectedProfile = 'nebula';
-      else {
+      else if (THEMES[userData.theme]?.isLive && THEME_ANIMATION_MAP[userData.theme]) {
+        selectedProfile = THEME_ANIMATION_MAP[userData.theme];
+      } else {
         const available = userData.tier === 'pro' ? [...proProfiles, ...freeProfiles] : freeProfiles;
         selectedProfile = available[Math.floor(Math.random() * available.length)];
       }
@@ -2282,12 +2306,31 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                               isHolding && "ring-2 ring-white/50"
                             )}
                           >
+                            {/* Liquid Metal Shader Border */}
                             <div 
-                              className="absolute inset-0 bg-white/40 origin-bottom"
+                              className="absolute inset-0 z-25 pointer-events-none rounded-full overflow-hidden"
+                              style={{
+                                padding: '2px',
+                                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                WebkitMaskComposite: 'xor',
+                                maskComposite: 'exclude',
+                              }}
+                            >
+                              <LiquidMetalShader 
+                                className="absolute inset-[-2px]" 
+                                opacity={isHolding ? 1.0 : 0.8}
+                                distortion={isHolding ? 0.6 : 0.2}
+                                repetition={isHolding ? 4 : 2.5}
+                                scale={isHolding ? 3 : 2}
+                              />
+                            </div>
+                            
+                            <div 
+                              className="absolute inset-0 bg-white/40 origin-bottom z-10"
                               style={{ transform: `scaleY(${holdProgress / 100})`, transition: isHolding ? 'none' : 'transform 0.3s ease-out' }}
                             />
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                            <ArrowUp className={cn("w-5 h-5 opacity-90 transition-opacity relative z-10", isHolding ? "opacity-100 animate-pulse" : "group-hover:opacity-100")} />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] z-20" />
+                            <ArrowUp className={cn("w-5 h-5 opacity-90 transition-opacity relative z-30", isHolding ? "opacity-100 animate-pulse" : "group-hover:opacity-100")} />
                           </motion.button>
                         )}
                       </AnimatePresence>
@@ -2772,7 +2815,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
                             {Object.keys(ANIMATIONS_CONFIG).map((animId) => {
                               const anim = ANIMATIONS_CONFIG[animId];
-                              const isLocked = anim.isPro && userData.tier === 'free';
+                              const isLocked = anim.isPro && userData.tier === 'free' && !isAdmin;
                               return (
                                 <button
                                   key={animId}
