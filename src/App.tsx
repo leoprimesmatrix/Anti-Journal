@@ -8,6 +8,7 @@ import Hero from './components/Hero';
 import AntiJournal from './components/AntiJournal';
 import AdminPanel from './components/AdminPanel';
 import RetroMonitor from './components/RetroMonitor';
+import { AmbientBackground, Theme } from './components/AmbientBackground';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -22,6 +23,7 @@ interface UserProfile {
   email: string;
   tier: string;
   role?: string;
+  theme?: Theme;
 }
 
 export default function App() {
@@ -31,8 +33,19 @@ export default function App() {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [hashRoute, setHashRoute] = useState(window.location.hash);
+  const [isEcoMode, setIsEcoMode] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   const isAdmin = user && adminEmail && user.email === adminEmail;
+
+  useEffect(() => {
+    // Auto-detect mobile for Eco Mode
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) {
+      setIsEcoMode(true);
+      setReduceMotion(true);
+    }
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => setHashRoute(window.location.hash);
@@ -200,10 +213,15 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      {user && profile && (
+        <AmbientBackground 
+          theme={profile.theme || 'void'} 
+          reduceMotion={reduceMotion} 
+          isEcoMode={isEcoMode} 
+        />
+      )}
       {user ? (
-        <>
-          <AntiJournal isAdmin={isAdmin} onShowAdmin={() => setShowAdmin(true)} />
-        </>
+        <AntiJournal isAdmin={isAdmin} onShowAdmin={() => setShowAdmin(true)} />
       ) : (
         <Hero />
       )}

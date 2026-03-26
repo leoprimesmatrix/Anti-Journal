@@ -122,7 +122,7 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans p-8">
+    <div className="min-h-screen text-white font-sans p-8 relative z-10">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">

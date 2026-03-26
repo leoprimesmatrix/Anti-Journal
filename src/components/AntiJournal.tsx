@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { ArrowUp, Lock, Sparkles, History, Palette, Activity, X, CheckCircle2, Zap, LogOut, TrendingUp, Twitter, Github, Mountain, Diamond, Orbit, Grid3X3, Waves, Layers, User, Eye, Shield } from 'lucide-react';
+import { ArrowUp, Lock, Sparkles, History, Palette, Activity, X, CheckCircle2, Zap, LogOut, TrendingUp, Twitter, Github, Mountain, Diamond, Orbit, Grid3X3, Waves, Layers, User, Eye, Shield, Volume2, VolumeX } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, subDays, isSameMonth, isSameDay } from 'date-fns';
@@ -925,14 +925,21 @@ const ThemePreviewCard = ({ theme, reduceMotion = false }: { theme: Theme, reduc
   );
 };
 
-const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false }: { theme: Theme, reduceMotion?: boolean, isEcoMode?: boolean }) => {
+const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false, isMuted = false }: { theme: Theme, reduceMotion?: boolean, isEcoMode?: boolean, isMuted?: boolean }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = isMuted ? 0 : (THEMES[theme].volume ?? 1);
+    }
+  }, [isMuted, theme]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !THEMES[theme].audioUrl) return;
 
-    audio.volume = THEMES[theme].volume ?? 1;
+    audio.volume = isMuted ? 0 : (THEMES[theme].volume ?? 1);
 
     const handleInteraction = async () => {
       try {
@@ -1243,7 +1250,8 @@ interface Stats {
 
 type Phase = 'intro' | 'idle' | 'prep' | 'destroying' | 'aftermath';
 
-const playTensionSound = () => {
+const playTensionSound = (isMuted: boolean) => {
+  if (isMuted) return null;
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return null;
@@ -1279,7 +1287,8 @@ const playTensionSound = () => {
   }
 };
 
-const playBreathingSound = () => {
+const playBreathingSound = (isMuted: boolean) => {
+  if (isMuted) return;
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
@@ -1316,7 +1325,8 @@ const playBreathingSound = () => {
   } catch (e) {}
 };
 
-const playCosmicHum = () => {
+const playCosmicHum = (isMuted: boolean) => {
+  if (isMuted) return;
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
@@ -1419,6 +1429,7 @@ const THEME_ANIMATION_MAP: Record<string, string> = {
 };
 
 export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolean, onShowAdmin?: () => void }) {
+  const [isMuted, setIsMuted] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   const [text, setText] = useState('');
   const [isHolding, setIsHolding] = useState(false);
@@ -1834,7 +1845,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     else if (isSad) tone = 'sad';
 
     triggerHaptic(ritualMode === 'heavy' ? [100, 200, 300, 400] : [50, 100, 150, 200, 300]);
-    playCosmicHum();
+    playCosmicHum(isMuted);
 
     const proProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => ANIMATIONS_CONFIG[key].isPro);
     const freeProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => !ANIMATIONS_CONFIG[key].isPro);
@@ -1990,7 +2001,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       }
 
       setIsDestroyed(true);
-      playBreathingSound();
+      playBreathingSound(isMuted);
       
       // Subtle heartbeat haptics during breathing
       const breathInterval = setInterval(() => {
@@ -2011,7 +2022,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     triggerHaptic(10);
     
     if (!tensionSoundRef.current) {
-      tensionSoundRef.current = playTensionSound();
+      tensionSoundRef.current = playTensionSound(isMuted);
     }
     
     let lastHapticProgress = 0;
@@ -2231,7 +2242,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       currentTheme.bg,
       isEcoMode && "eco-mode"
     )} style={{ perspective: '2000px' }}>
-      <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} isEcoMode={isEcoMode} />
+      <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} isEcoMode={isEcoMode} isMuted={isMuted} />
       <VoidGarden fragments={fragments} reduceMotion={reduceMotion} />
       
       {/* Hold Overlay */}
@@ -2599,6 +2610,14 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                   <span className="font-medium ml-1 md:ml-2 text-white">{dailyCount}</span>
                 </span>
               </div>
+              <button 
+                onClick={() => setIsMuted(!isMuted)} 
+                className="liquid-glass px-2 py-1.5 md:px-4 md:py-2 rounded-full flex items-center gap-2 hover:bg-white/10 transition-all shrink-0"
+                title={isMuted ? "Unmute Music" : "Mute Music"}
+              >
+                {isMuted ? <VolumeX className="w-3 h-3 md:w-4 md:h-4" /> : <Volume2 className="w-3 h-3 md:w-4 md:h-4" />}
+                <span className="hidden sm:inline">{isMuted ? "Unmute" : "Mute"}</span>
+              </button>
               {userData.tier === 'free' && (
                 <button onClick={() => setShowProModal(true)} className="liquid-glass-strong px-2 py-1.5 md:px-4 md:py-2 rounded-full hover:scale-105 transition-transform flex items-center gap-1.5 text-amber-300 shrink-0">
                   <Sparkles className="w-3 h-3" /> <span className="hidden sm:inline">Upgrade</span>
