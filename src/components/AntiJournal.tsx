@@ -7,7 +7,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, subDays, isSameMonth, isSameDay } from 'date-fns';
 import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, FirebaseUser, handleFirestoreError, OperationType } from '../firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, where, increment } from 'firebase/firestore';
 import { LiquidMetalShader } from './LiquidMetalShader';
 import { ANIMATIONS_CONFIG, ActiveAnimationComponent, THEME_COLORS, GlobalPulse } from './ReleaseAnimations';
 import { VoidGarden, Fragment } from './VoidGarden';
@@ -88,6 +88,8 @@ interface UserData {
   isEcoMode?: boolean;
   disableBreathing?: boolean;
   paypalSubscriptionId?: string;
+  totalElapsedTime?: number;
+  lastSeen?: number;
 }
 
 const defaultUserData: UserData = {
@@ -101,7 +103,9 @@ const defaultUserData: UserData = {
   theme: 'stardust',
   selectedAnimation: 'random',
   isEcoMode: false,
-  disableBreathing: false
+  disableBreathing: false,
+  totalElapsedTime: 0,
+  lastSeen: Date.now()
 };
 
 const CosmicCanvas = ({ theme, reduceMotion = false }: { theme: Theme, reduceMotion?: boolean }) => {
@@ -1584,6 +1588,8 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           selectedAnimation: data.selectedAnimation || 'random',
           isEcoMode: data.isEcoMode ?? prev.isEcoMode,
           disableBreathing: data.disableBreathing ?? prev.disableBreathing,
+          totalElapsedTime: data.totalElapsedTime || 0,
+          lastSeen: data.lastSeen || Date.now(),
         }));
         if (data.isEcoMode !== undefined) setIsEcoMode(data.isEcoMode);
       } else {
@@ -1598,6 +1604,8 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           theme: 'void',
           isEcoMode: isEcoMode, // Use the auto-detected value
           disableBreathing: false,
+          totalElapsedTime: 0,
+          lastSeen: Date.now(),
           email: user.email,
           updatedAt: serverTimestamp()
         };
@@ -1701,15 +1709,91 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
 
   const getLocalResetPoint = useCallback(() => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return now.getTime();
+    const reset = new Date(now);
+    reset.setHours(7, 0, 0, 0);
+    if (now < reset) {
+      reset.setDate(reset.getDate() - 1);
+    }
+    return reset.getTime();
   }, []);
 
   const getGlobalResetPoint = useCallback(() => {
     const now = new Date();
-    now.setUTCHours(0, 0, 0, 0);
-    return now.getTime();
+    const reset = new Date(now);
+    reset.setUTCHours(7, 0, 0, 0);
+    if (now < reset) {
+      reset.setUTCDate(reset.getUTCDate() - 1);
+    }
+    return reset.getTime();
   }, []);
+
+  const getAppDate = useCallback((timestamp: number) => {
+    const date = new Date(timestamp);
+    const reset = new Date(date);
+    reset.setHours(7, 0, 0, 0);
+    if (date < reset) {
+      date.setDate(date.getDate() - 1);
+    }
+    return format(date, 'yyyy-MM-dd');
+  }, []);
+
+  // Track elapsed time and presence
+  useEffect(() => {
+    if (!user) return;
+
+    let lastUpdate = Date.now();
+
+    const updateStats = async () => {
+      const now = Date.now();
+      const elapsedSinceLast = Math.floor((now - lastUpdate) / 1000);
+      if (elapsedSinceLast < 1) return;
+
+      lastUpdate = now;
+      const appDate = getAppDate(now);
+
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const dailyStatRef = doc(db, 'users', user.uid, 'dailyStats', appDate);
+
+        // Update user profile
+        await updateDoc(userRef, {
+          totalElapsedTime: increment(elapsedSinceLast),
+          lastSeen: now
+        });
+
+        // Update daily stats
+        const dailySnap = await getDoc(dailyStatRef);
+        if (dailySnap.exists()) {
+          await updateDoc(dailyStatRef, {
+            elapsedTime: increment(elapsedSinceLast)
+          });
+        } else {
+          await setDoc(dailyStatRef, {
+            date: appDate,
+            elapsedTime: elapsedSinceLast
+          });
+        }
+
+        // Update presence collection for admin panel
+        await setDoc(doc(db, 'presence', user.uid), {
+          uid: user.uid,
+          lastSeen: new Date(now).toISOString()
+        });
+
+      } catch (error) {
+        console.error("Error updating elapsed time:", error);
+      }
+    };
+
+    // Update every minute
+    const interval = setInterval(updateStats, 60000);
+
+    // Also update on unmount
+    return () => {
+      clearInterval(interval);
+      updateStats();
+    };
+  }, [user, getAppDate]);
 
   const currentGlobalReleases = useMemo(() => {
     const resetPointTime = getGlobalResetPoint();
@@ -1813,6 +1897,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
         id: newFragment.id,
         timestamp: newFragment.timestamp,
         snippet: currentText.length > 15 ? currentText.substring(0, 15) + '...' : currentText,
+        thought: currentText,
         animation: selectedProfile
       });
       
@@ -1829,6 +1914,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
         lastDailyUpdate: Date.now(),
         monthlyReleases: isNewMonth ? 1 : userData.monthlyReleases + 1,
         lastMonthlyUpdate: Date.now(),
+        lastSeen: Date.now(),
         updatedAt: serverTimestamp()
       });
 

@@ -36,7 +36,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (
-          request.auth.token.email == "leonardoandresdiaz2606@gmail.com" ||
+          ('email' in request.auth.token && request.auth.token.email == "leonardoandresdiaz2606@gmail.com") ||
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
         );
@@ -73,16 +73,20 @@ service cloud.firestore {
              (!('isEcoMode' in data) || data.isEcoMode is bool) &&
              (!('approved' in data) || data.approved is bool) &&
              (!('isBanned' in data) || data.isBanned is bool) &&
+             (!('lastSeen' in data) || data.lastSeen is number) &&
+             (!('disableBreathing' in data) || data.disableBreathing is bool) &&
+             (!('totalElapsedTime' in data) || data.totalElapsedTime is number) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
     function isValidHistory(data) {
-      return data.keys().hasOnly(['id', 'timestamp', 'snippet', 'animation']) &&
+      return data.keys().hasOnly(['id', 'timestamp', 'snippet', 'thought', 'animation']) &&
              data.keys().hasAll(['id', 'timestamp', 'snippet', 'animation']) &&
              data.id is string &&
              data.timestamp is number &&
              data.snippet is string &&
              data.snippet.size() < 200 &&
+             (!('thought' in data) || (data.thought is string && data.thought.size() < 10000)) &&
              data.animation is string;
     }
 
@@ -111,7 +115,7 @@ service cloud.firestore {
                     isValidUser(request.resource.data) && 
                     (isAdmin() || (
                       request.resource.data.keys().hasAll(['tier', 'totalReleases', 'theme', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
-                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode']) &&
+                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode', 'lastSeen', 'disableBreathing', 'totalElapsedTime']) &&
                       request.resource.data.tier == 'free' &&
                       request.resource.data.approved == false &&
                       request.resource.data.isBanned == false
@@ -121,7 +125,7 @@ service cloud.firestore {
       allow update: if (isAdmin() || (isOwner(userId) && isNotBanned())) && 
                     isValidUser(request.resource.data) &&
                     (isAdmin() || (
-                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode']) &&
+                      request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode', 'lastSeen', 'disableBreathing', 'totalElapsedTime']) &&
                       (request.resource.data.tier == resource.data.tier || request.resource.data.tier == 'pro') &&
                       (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
                       (!('approved' in request.resource.data) || request.resource.data.approved == resource.data.approved) &&
@@ -132,16 +136,21 @@ service cloud.firestore {
 
       match /history/{entryId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && isApproved() && isNotBanned() && isValidHistory(request.resource.data);
-        allow update: if isOwner(userId) && isApproved() && isNotBanned() && isValidHistory(request.resource.data);
+        allow create: if (isAdmin() || (isOwner(userId) && isApproved() && isNotBanned())) && isValidHistory(request.resource.data);
+        allow update: if (isAdmin() || (isOwner(userId) && isApproved() && isNotBanned())) && isValidHistory(request.resource.data);
         allow delete: if (isOwner(userId) && isApproved() && isNotBanned()) || isAdmin();
       }
 
       match /fragments/{fragmentId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && isApproved() && isNotBanned() && isValidFragment(request.resource.data);
-        allow update: if isOwner(userId) && isApproved() && isNotBanned() && isValidFragment(request.resource.data);
+        allow create: if (isAdmin() || (isOwner(userId) && isApproved() && isNotBanned())) && isValidFragment(request.resource.data);
+        allow update: if (isAdmin() || (isOwner(userId) && isApproved() && isNotBanned())) && isValidFragment(request.resource.data);
         allow delete: if (isOwner(userId) && isApproved() && isNotBanned()) || isAdmin();
+      }
+
+      match /dailyStats/{dateId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
       }
     }
 

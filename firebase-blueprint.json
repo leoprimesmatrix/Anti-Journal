@@ -59,6 +59,14 @@
         "isEcoMode": {
           "type": "boolean",
           "description": "Whether the user has enabled Eco Mode for performance"
+        },
+        "totalElapsedTime": {
+          "type": "integer",
+          "description": "Total time spent on the app in seconds"
+        },
+        "lastSeen": {
+          "type": "integer",
+          "description": "Timestamp of the last user activity"
         }
       },
       "required": ["tier", "totalReleases", "theme", "email", "approved", "isBanned"]
@@ -71,9 +79,20 @@
         "id": { "type": "string" },
         "timestamp": { "type": "integer" },
         "snippet": { "type": "string" },
+        "thought": { "type": "string", "description": "The full text of the released thought" },
         "animation": { "type": "string" }
       },
-      "required": ["id", "timestamp", "snippet", "animation"]
+      "required": ["id", "timestamp", "snippet", "thought", "animation"]
+    },
+    "DailyStat": {
+      "title": "Daily Statistic",
+      "description": "Tracks metrics for a specific day",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "description": "YYYY-MM-DD format" },
+        "elapsedTime": { "type": "integer", "description": "Seconds spent on this day" }
+      },
+      "required": ["date", "elapsedTime"]
     },
     "Fragment": {
       "title": "Void Fragment",
@@ -109,6 +128,10 @@
     "/users/{userId}/history/{entryId}": {
       "schema": "HistoryEntry",
       "description": "Individual history entries for the user"
+    },
+    "/users/{userId}/dailyStats/{dateId}": {
+      "schema": "DailyStat",
+      "description": "Daily statistics for the user"
     },
     "/users/{userId}/fragments/{fragmentId}": {
       "schema": "Fragment",

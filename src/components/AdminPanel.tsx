@@ -15,12 +15,15 @@ interface UserProfile {
   dailyReleases?: number;
   lastDailyUpdate?: number;
   role?: string;
+  totalElapsedTime?: number;
+  lastSeen?: number;
 }
 
 const AdminPanel = ({ onBack }: { onBack: () => void }) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedUserStats, setSelectedUserStats] = useState<{userId: string, stats: any[]} | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'users'));
@@ -38,6 +41,34 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
 
     return () => unsubscribe();
   }, []);
+
+  const fetchDailyStats = async (userId: string) => {
+    try {
+      const statsRef = collection(db, 'users', userId, 'dailyStats');
+      const statsSnap = await getDocs(statsRef);
+      const stats = statsSnap.docs.map(doc => doc.data()).sort((a, b) => b.date.localeCompare(a.date));
+      setSelectedUserStats({ userId, stats });
+    } catch (error) {
+      console.error("Error fetching daily stats:", error);
+    }
+  };
+
+  const formatElapsedTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
+  const formatLastSeen = (timestamp?: number) => {
+    if (!timestamp) return 'Never';
+    const now = Date.now();
+    const diff = now - timestamp;
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
 
   const handleToggleBan = async (userId: string, currentStatus: boolean) => {
     try {
@@ -151,7 +182,8 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                 <tr className="border-b border-white/10 bg-white/5">
                   <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-medium">User</th>
                   <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-medium">Status</th>
-                  <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-medium">Activity</th>
+                  <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-medium">Releases</th>
+                  <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-medium">Time Spent</th>
                   <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -173,23 +205,34 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                           <div className="flex flex-col">
                             <span className="text-sm font-medium">{user.email}</span>
                             <span className="text-[10px] text-white/20 font-mono">{user.id}</span>
+                            <span className="text-[10px] text-white/40">Last seen: {formatLastSeen(user.lastSeen)}</span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider ${
-                            user.approved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
-                          }`}>
-                            {user.approved ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                            {user.approved ? 'Approved' : 'Pending'}
-                          </div>
-                          {user.isBanned && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider bg-red-500/10 text-red-400">
-                              <ShieldOff className="w-3 h-3" />
-                              Banned
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-4">
+                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider ${
+                              user.approved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
+                            }`}>
+                              {user.approved ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                              {user.approved ? 'Approved' : 'Pending'}
                             </div>
-                          )}
+                            {user.isBanned && (
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider bg-red-500/10 text-red-400">
+                                <ShieldOff className="w-3 h-3" />
+                                Banned
+                              </div>
+                            )}
+                          </div>
+                          <select
+                            value={user.tier}
+                            onChange={(e) => handleUpdateTier(user.id, e.target.value)}
+                            className="bg-white/5 border border-white/10 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/60 focus:outline-none focus:border-white/20 hover:text-white transition-colors cursor-pointer w-fit"
+                          >
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                          </select>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -200,14 +243,17 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                               {(!user.lastDailyUpdate || user.lastDailyUpdate < resetPointTime) ? 0 : (user.dailyReleases || 0)} today
                             </span>
                           </div>
-                          <select
-                            value={user.tier}
-                            onChange={(e) => handleUpdateTier(user.id, e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/60 focus:outline-none focus:border-white/20 hover:text-white transition-colors cursor-pointer w-fit"
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm text-white/60">{formatElapsedTime(user.totalElapsedTime || 0)} total</span>
+                          <button 
+                            onClick={() => fetchDailyStats(user.id)}
+                            className="text-[10px] text-white/40 hover:text-white underline underline-offset-2 transition-colors text-left"
                           >
-                            <option value="free">Free</option>
-                            <option value="pro">Pro</option>
-                          </select>
+                            View daily history
+                          </button>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -262,6 +308,7 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                       <div className="flex flex-col overflow-hidden">
                         <span className="text-sm font-medium truncate">{user.email}</span>
                         <span className="text-[10px] text-white/20 font-mono truncate">{user.id}</span>
+                        <span className="text-[10px] text-white/40">Last seen: {formatLastSeen(user.lastSeen)}</span>
                       </div>
                     </div>
                   </div>
@@ -285,6 +332,15 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
                         <span className="text-[10px] text-white/30">
                           {(!user.lastDailyUpdate || user.lastDailyUpdate < resetPointTime) ? 0 : (user.dailyReleases || 0)} today
                         </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs text-white/60">{formatElapsedTime(user.totalElapsedTime || 0)}</span>
+                        <button 
+                          onClick={() => fetchDailyStats(user.id)}
+                          className="text-[10px] text-white/40 underline"
+                        >
+                          History
+                        </button>
                       </div>
                       <select
                         value={user.tier}
@@ -340,6 +396,53 @@ const AdminPanel = ({ onBack }: { onBack: () => void }) => {
           )}
         </div>
       </div>
+
+      {/* Daily Stats Modal */}
+      <AnimatePresence>
+        {selectedUserStats && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">Daily Activity</h3>
+                  <p className="text-xs text-white/40 font-mono">{selectedUserStats.userId}</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedUserStats(null)}
+                  className="p-2 rounded-full hover:bg-white/5 transition-colors"
+                >
+                  <XCircle className="w-6 h-6 text-white/40" />
+                </button>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto p-6 space-y-4">
+                {selectedUserStats.stats.length === 0 ? (
+                  <p className="text-center text-white/40 py-8">No daily history found.</p>
+                ) : (
+                  selectedUserStats.stats.map((stat, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <span className="text-sm font-medium">{stat.date}</span>
+                      <span className="text-sm text-white/60">{formatElapsedTime(stat.elapsedTime)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="p-6 bg-white/5 border-t border-white/10">
+                <button 
+                  onClick={() => setSelectedUserStats(null)}
+                  className="w-full py-3 rounded-2xl bg-white text-black font-medium hover:bg-white/90 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
