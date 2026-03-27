@@ -5,10 +5,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Hero from './components/Hero';
-import AntiJournal from './components/AntiJournal';
+import AntiJournal, { Theme } from './components/AntiJournal';
 import AdminPanel from './components/AdminPanel';
 import RetroMonitor from './components/RetroMonitor';
-import { AmbientBackground, Theme } from './components/AmbientBackground';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -213,13 +212,6 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      {user && profile && (
-        <AmbientBackground 
-          theme={profile.theme || 'void'} 
-          reduceMotion={reduceMotion} 
-          isEcoMode={isEcoMode} 
-        />
-      )}
       {user ? (
         <AntiJournal isAdmin={isAdmin} onShowAdmin={() => setShowAdmin(true)} />
       ) : (

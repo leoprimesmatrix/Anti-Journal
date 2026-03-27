@@ -1,12 +1,8 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 import fs from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Initialize Firebase Admin
 let isFirebaseInitialized = false;
@@ -18,7 +14,7 @@ try {
     // Read the database ID from the config file if it exists
     let databaseId = '(default)';
     try {
-      const configPath = path.join(__dirname, 'firebase-applet-config.json');
+      const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
       if (fs.existsSync(configPath)) {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         if (config.firestoreDatabaseId) {
@@ -85,7 +81,7 @@ async function startServer() {
       // Read the database ID from the config file if it exists
       let databaseId = '(default)';
       try {
-        const configPath = path.join(__dirname, 'firebase-applet-config.json');
+        const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
         if (fs.existsSync(configPath)) {
           const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
           if (config.firestoreDatabaseId) {
@@ -154,7 +150,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(__dirname, 'dist');
+    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     // For Express v4, use '*'
     app.get('*', (req, res) => {

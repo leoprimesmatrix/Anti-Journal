@@ -20,7 +20,7 @@ function cn(...inputs: ClassValue[]) {
 
 type RitualMode = 'heavy' | 'mist' | 'echo' | 'standard' | 'oracle';
 
-type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift' | 'woodlandRetreat' | 'oceanicHorizon' | 'cascadingSerenity' | 'snowboundSilence' | 'urbanEchoes' | 'sunsetVigil' | 'neonPulse' | 'celestialWhispers' | 'galacticBloom' | 'lunarTide';
+export type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift' | 'woodlandRetreat' | 'oceanicHorizon' | 'cascadingSerenity' | 'snowboundSilence' | 'urbanEchoes' | 'sunsetVigil' | 'neonPulse' | 'celestialWhispers' | 'galacticBloom' | 'lunarTide';
 
 const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, audioUrl?: string, volume?: number, filter?: string, zoom?: boolean, playbackRate?: number, isGif?: boolean, noOverlay?: boolean, icon: React.ReactNode }> = {
   // Live Atmospheres (Video Themes)
@@ -1429,7 +1429,9 @@ const THEME_ANIMATION_MAP: Record<string, string> = {
 };
 
 export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolean, onShowAdmin?: () => void }) {
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMusicMuted, setIsMusicMuted] = useState(false);
+  const [isAllMuted, setIsAllMuted] = useState(false);
+  const muteTimerRef = useRef<number | null>(null);
   const { t, language, setLanguage } = useLanguage();
   const [text, setText] = useState('');
   const [isHolding, setIsHolding] = useState(false);
@@ -1845,7 +1847,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     else if (isSad) tone = 'sad';
 
     triggerHaptic(ritualMode === 'heavy' ? [100, 200, 300, 400] : [50, 100, 150, 200, 300]);
-    playCosmicHum(isMuted);
+    playCosmicHum(isAllMuted);
 
     const proProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => ANIMATIONS_CONFIG[key].isPro);
     const freeProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => !ANIMATIONS_CONFIG[key].isPro);
@@ -2001,7 +2003,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       }
 
       setIsDestroyed(true);
-      playBreathingSound(isMuted);
+      playBreathingSound(isAllMuted);
       
       // Subtle heartbeat haptics during breathing
       const breathInterval = setInterval(() => {
@@ -2022,7 +2024,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     triggerHaptic(10);
     
     if (!tensionSoundRef.current) {
-      tensionSoundRef.current = playTensionSound(isMuted);
+      tensionSoundRef.current = playTensionSound(isAllMuted);
     }
     
     let lastHapticProgress = 0;
@@ -2242,10 +2244,20 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       currentTheme.bg,
       isEcoMode && "eco-mode"
     )} style={{ perspective: '2000px' }}>
-      <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} isEcoMode={isEcoMode} isMuted={isMuted} />
-      <VoidGarden fragments={fragments} reduceMotion={reduceMotion} />
       
-      {/* Hold Overlay */}
+      <motion.div 
+        className="absolute inset-0 flex flex-col items-center justify-center"
+        animate={{ 
+          opacity: 1,
+          scale: 1,
+        }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        style={{ pointerEvents: 'auto' }}
+      >
+        <AmbientBackground theme={userData.theme} reduceMotion={reduceMotion} isEcoMode={isEcoMode} isMuted={isMusicMuted || isAllMuted} />
+        <VoidGarden fragments={fragments} reduceMotion={reduceMotion} />
+        
+        {/* Hold Overlay */}
       <div 
         className="fixed inset-0 pointer-events-none z-40 transition-opacity duration-75"
         style={{ 
@@ -2611,12 +2623,37 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                 </span>
               </div>
               <button 
-                onClick={() => setIsMuted(!isMuted)} 
-                className="liquid-glass px-2 py-1.5 md:px-4 md:py-2 rounded-full flex items-center gap-2 hover:bg-white/10 transition-all shrink-0"
-                title={isMuted ? "Unmute Music" : "Mute Music"}
+                onPointerDown={() => {
+                  muteTimerRef.current = window.setTimeout(() => {
+                    setIsAllMuted(true);
+                    setIsMusicMuted(true);
+                    muteTimerRef.current = null;
+                    triggerHaptic(50);
+                  }, 800);
+                }}
+                onPointerUp={() => {
+                  if (muteTimerRef.current) {
+                    clearTimeout(muteTimerRef.current);
+                    muteTimerRef.current = null;
+                    if (isAllMuted) {
+                      setIsAllMuted(false);
+                      setIsMusicMuted(false);
+                    } else {
+                      setIsMusicMuted(!isMusicMuted);
+                    }
+                  }
+                }}
+                onPointerLeave={() => {
+                  if (muteTimerRef.current) {
+                    clearTimeout(muteTimerRef.current);
+                    muteTimerRef.current = null;
+                  }
+                }}
+                className={`liquid-glass px-2 py-1.5 md:px-4 md:py-2 rounded-full flex items-center gap-2 hover:bg-white/10 transition-all shrink-0 select-none ${isAllMuted ? 'text-red-400' : isMusicMuted ? 'text-orange-400' : ''}`}
+                title={isAllMuted ? "Unmute All" : isMusicMuted ? "Unmute Music (Hold to Mute All)" : "Mute Music (Hold to Mute All)"}
               >
-                {isMuted ? <VolumeX className="w-3 h-3 md:w-4 md:h-4" /> : <Volume2 className="w-3 h-3 md:w-4 md:h-4" />}
-                <span className="hidden sm:inline">{isMuted ? "Unmute" : "Mute"}</span>
+                {isAllMuted || isMusicMuted ? <VolumeX className="w-3 h-3 md:w-4 md:h-4" /> : <Volume2 className="w-3 h-3 md:w-4 md:h-4" />}
+                <span className="hidden sm:inline">{isAllMuted ? "Muted All" : isMusicMuted ? "Muted Music" : "Mute"}</span>
               </button>
               {userData.tier === 'free' && (
                 <button onClick={() => setShowProModal(true)} className="liquid-glass-strong px-2 py-1.5 md:px-4 md:py-2 rounded-full hover:scale-105 transition-transform flex items-center gap-1.5 text-amber-300 shrink-0">
@@ -2640,6 +2677,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
               </motion.footer>
         )}
       </AnimatePresence>
+      </motion.div>
 
       <AnimatePresence>
         {showStats && (
