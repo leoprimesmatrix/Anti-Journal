@@ -78,9 +78,11 @@ export const TopBar = React.memo(({
             <div className="w-px h-4 bg-white/10 mx-2" />
             <div className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">
+                {/*
                 <p className="text-[10px] uppercase tracking-widest text-white/40 font-medium">
                   {userData.tier === 'pro' ? 'Pro Member' : 'Free Tier'}
                 </p>
+                */}
                 <p className="text-xs text-white/80 font-light">{user.displayName || 'User'}</p>
               </div>
               <button 

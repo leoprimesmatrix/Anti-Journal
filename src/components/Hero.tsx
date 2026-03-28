@@ -10,11 +10,25 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const BACKGROUND_VIDEOS = [
+  'https://files.catbox.moe/ckw6ym.mp4', // Midnight Sanctuary
+  'https://files.catbox.moe/oj4c2s.mp4', // Nocturnal Haven
+  'https://files.catbox.moe/r688ph.mp4', // Urban Solitude
+  'https://files.catbox.moe/80u912.mp4', // Feline Vigil
+  'https://files.catbox.moe/wba8j2.mp4', // Transit Echoes
+  'https://files.catbox.moe/e6p8m1.mp4', // Twilight Lo-Fi
+  'https://files.catbox.moe/0ksawe.mp4', // Sunset Drift
+  'https://files.catbox.moe/129ue0.mp4', // Woodland Retreat
+  'https://files.catbox.moe/ekvzk3.mp4', // Oceanic Horizon
+  'https://files.catbox.moe/a1dso1.mp4'  // Nebula Vortex
+];
+
 const Hero = () => {
   const { t, language, setLanguage } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  // const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [videoSource] = useState(() => BACKGROUND_VIDEOS[Math.floor(Math.random() * BACKGROUND_VIDEOS.length)]);
   
   // Nav scroll behavior
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -43,10 +57,14 @@ const Hero = () => {
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      video.playbackRate = 0.5;
+      // Only slow down Nebula Vortex (a1dso1.mp4)
+      const isNebulaVortex = videoSource === 'https://files.catbox.moe/a1dso1.mp4';
+      const speed = isNebulaVortex ? 0.5 : 1.0;
+      
+      video.playbackRate = speed;
       video.muted = true;
       video.playsInline = true;
-      video.defaultPlaybackRate = 0.5; // Ensure it stays at 0.5x even if reloaded
+      video.defaultPlaybackRate = speed;
       
       const playVideo = async () => {
         try {
@@ -58,7 +76,7 @@ const Hero = () => {
       
       playVideo();
     }
-  }, []);
+  }, [videoSource]);
 
   const handleLogin = async () => {
     try {
@@ -89,7 +107,7 @@ const Hero = () => {
           <button onClick={() => scrollToSection(featuresRef)} className="text-sm text-white/60 hover:text-white transition-colors">{t.navFeatures}</button>
           <button onClick={() => scrollToSection(missionRef)} className="text-sm text-white/60 hover:text-white transition-colors">{t.navMission}</button>
           <button onClick={() => scrollToSection(philosophyRef)} className="text-sm text-white/60 hover:text-white transition-colors">{t.navPhilosophy}</button>
-          <button onClick={() => setIsPlansModalOpen(true)} className="text-sm text-white/60 hover:text-white transition-colors">{t.navPlans}</button>
+          {/* <button onClick={() => setIsPlansModalOpen(true)} className="text-sm text-white/60 hover:text-white transition-colors">{t.navPlans}</button> */}
           
           {/* Language Switcher */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
@@ -139,7 +157,7 @@ const Hero = () => {
             "absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000",
             isVideoLoaded ? "opacity-60" : "opacity-30"
           )}
-          src="https://files.catbox.moe/a1dso1.mp4"
+          src={videoSource}
         />
         <div className="absolute inset-0 bg-black/40 z-[1]" /> {/* Slight darkening for text readability */}
 
@@ -324,6 +342,7 @@ const Hero = () => {
       </section>
 
       {/* Plans Modal */}
+      {/*
       <AnimatePresence>
         {isPlansModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -355,7 +374,6 @@ const Hero = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 text-left">
-                {/* Free Plan */}
                 <div className="p-8 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
                   <div className="mb-8">
                     <h4 className="text-xl font-display mb-2">{t.planFreeName}</h4>
@@ -388,7 +406,6 @@ const Hero = () => {
                   </button>
                 </div>
 
-                {/* Pro Plan */}
                 <div className="p-8 rounded-2xl bg-gradient-to-b from-indigo-500/10 to-purple-500/10 border border-indigo-500/30 flex flex-col relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] uppercase tracking-widest py-1 px-3 rounded-bl-lg font-bold">
                     {t.recommended}
@@ -428,6 +445,7 @@ const Hero = () => {
           </div>
         )}
       </AnimatePresence>
+      */}
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/10 bg-black relative z-10">

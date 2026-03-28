@@ -75,7 +75,7 @@ const ParticleSystem = ({ animation, themeAccent }: { animation: string, themeAc
   const colors = THEME_COLORS[themeAccent] || THEME_COLORS.zinc;
   
   const particles = useMemo(() => {
-    const count = animation === 'supernovaPro' || animation === 'blackhole' ? 400 : 200;
+    const count = animation === 'blackhole' ? 400 : 200;
     const temp = [];
     for (let i = 0; i < count; i++) {
       const color = colors[Math.floor(Math.random() * colors.length)];
@@ -95,7 +95,7 @@ const ParticleSystem = ({ animation, themeAccent }: { animation: string, themeAc
       } else if (animation === 'goldenRain') {
         pos.set((Math.random() - 0.5) * 20, 10 + Math.random() * 10, (Math.random() - 0.5) * 10);
         vel.set((Math.random() - 0.5) * 2, -10 - Math.random() * 10, (Math.random() - 0.5) * 2);
-      } else if (animation === 'supernova' || animation === 'supernovaPro') {
+      } else if (animation === 'supernova') {
         pos.set(0, 0, 0);
         vel.set((Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
       }
@@ -164,7 +164,7 @@ const Letter = ({ char, position, animation, delay }: { char: string, position: 
       mesh.position.y += delta * 1;
       mesh.scale.multiplyScalar(1 - delta * 0.5);
       mesh.material.opacity = Math.max(0, 1 - activeTime * 0.5);
-    } else if (animation === 'supernova' || animation === 'supernovaPro' || animation === 'burst') {
+    } else if (animation === 'supernova' || animation === 'burst') {
       const dir = mesh.position.clone().normalize();
       mesh.position.add(dir.multiplyScalar(delta * 20));
       mesh.scale.multiplyScalar(1 + delta * 3);

@@ -22,50 +22,50 @@ type RitualMode = 'heavy' | 'mist' | 'echo' | 'standard' | 'oracle';
 
 export type Theme = 'liquidGlass' | 'cinematicNoir' | 'auroraGlow' | 'minimalLuxury' | 'futuristicEditorial' | 'softHolographic' | 'deepSpace' | 'stardust' | 'retroGrid' | 'auroraBorealis' | 'sereneLandscape' | 'obsidian' | 'nebula' | 'void' | 'midnight' | 'crimson' | 'ethereal' | 'abyss' | 'nebulaVortex' | 'midnightSanctuary' | 'nocturnalHaven' | 'urbanSolitude' | 'felineVigil' | 'transitEchoes' | 'twilightLofi' | 'sunsetDrift' | 'woodlandRetreat' | 'oceanicHorizon' | 'cascadingSerenity' | 'snowboundSilence' | 'urbanEchoes' | 'sunsetVigil' | 'neonPulse' | 'celestialWhispers' | 'galacticBloom' | 'lunarTide';
 
-const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isPro: boolean, isOld?: boolean, isLive?: boolean, videoUrl?: string, audioUrl?: string, volume?: number, filter?: string, zoom?: boolean, playbackRate?: number, isGif?: boolean, noOverlay?: boolean, icon: React.ReactNode }> = {
+const THEMES: Record<Theme, { bg: string, accent: string, text: string, name: string, isOld?: boolean, isLive?: boolean, videoUrl?: string, audioUrl?: string, volume?: number, filter?: string, zoom?: boolean, playbackRate?: number, isGif?: boolean, noOverlay?: boolean, icon: React.ReactNode }> = {
   // Live Atmospheres (Video Themes)
-  midnightSanctuary: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Midnight Sanctuary', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ckw6ym.mp4', audioUrl: 'https://files.catbox.moe/rzwh3d.mp3', volume: 0.2, filter: 'brightness(0.6) contrast(1.1)', icon: <Waves className="w-5 h-5" /> },
-  nocturnalHaven: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Nocturnal Haven', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/oj4c2s.mp4', audioUrl: 'https://files.catbox.moe/2qxivc.mp3', filter: 'brightness(0.7) contrast(1.05)', icon: <Waves className="w-5 h-5" /> },
-  urbanSolitude: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Urban Solitude', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/r688ph.mp4', filter: 'brightness(0.6)', zoom: true, icon: <Waves className="w-5 h-5" /> },
-  felineVigil: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Feline Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/80u912.mp4', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.6)', icon: <Waves className="w-5 h-5" /> },
-  transitEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Transit Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/wba8j2.mp4', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', filter: 'brightness(0.5)', icon: <Waves className="w-5 h-5" /> },
-  twilightLofi: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Twilight Lo-Fi', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/e6p8m1.mp4', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
-  sunsetDrift: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Drift', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/0ksawe.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
-  woodlandRetreat: { bg: 'bg-black', accent: 'emerald', text: 'text-emerald-100', name: 'Woodland Retreat', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/129ue0.mp4', filter: 'brightness(0.7)', icon: <Mountain className="w-5 h-5" /> },
-  oceanicHorizon: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Oceanic Horizon', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ekvzk3.mp4', filter: 'brightness(0.7)', icon: <Waves className="w-5 h-5" /> },
-  cascadingSerenity: { bg: 'bg-black', accent: 'teal', text: 'text-teal-100', name: 'Cascading Serenity', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/gzjamw.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', zoom: true, isGif: true, icon: <Waves className="w-5 h-5" /> },
-  snowboundSilence: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Snowbound Silence', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/u4ujnb.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  urbanEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Urban Echoes', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/ipn54d.gif', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  sunsetVigil: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Vigil', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/fglfav.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  neonPulse: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Neon Pulse', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/vfys71.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.6)', isGif: true, icon: <Waves className="w-5 h-5" /> },
-  celestialWhispers: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Celestial Whispers', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/amr3r5.gif', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', isGif: true, noOverlay: true, icon: <Sparkles className="w-5 h-5" /> },
-  galacticBloom: { bg: 'bg-black', accent: 'fuchsia', text: 'text-fuchsia-100', name: 'Galactic Bloom', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/l14uyj.gif', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', filter: 'brightness(0.85)', isGif: true, icon: <Orbit className="w-5 h-5" /> },
-  lunarTide: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Lunar Tide', isPro: false, isLive: true, videoUrl: 'https://files.catbox.moe/klkmjo.gif', zoom: true, isGif: true, noOverlay: true, icon: <Waves className="w-5 h-5" /> },
-  nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isPro: true, isLive: true, videoUrl: 'https://files.catbox.moe/a1dso1.mp4', playbackRate: 0.5, icon: <Orbit className="w-5 h-5" /> },
+  midnightSanctuary: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Midnight Sanctuary', isLive: true, videoUrl: 'https://files.catbox.moe/ckw6ym.mp4', audioUrl: 'https://files.catbox.moe/rzwh3d.mp3', volume: 0.2, filter: 'brightness(0.6) contrast(1.1)', icon: <Waves className="w-5 h-5" /> },
+  nocturnalHaven: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Nocturnal Haven', isLive: true, videoUrl: 'https://files.catbox.moe/oj4c2s.mp4', audioUrl: 'https://files.catbox.moe/2qxivc.mp3', filter: 'brightness(0.7) contrast(1.05)', icon: <Waves className="w-5 h-5" /> },
+  urbanSolitude: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Urban Solitude', isLive: true, videoUrl: 'https://files.catbox.moe/r688ph.mp4', filter: 'brightness(0.6)', zoom: true, icon: <Waves className="w-5 h-5" /> },
+  felineVigil: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Feline Vigil', isLive: true, videoUrl: 'https://files.catbox.moe/80u912.mp4', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.6)', icon: <Waves className="w-5 h-5" /> },
+  transitEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Transit Echoes', isLive: true, videoUrl: 'https://files.catbox.moe/wba8j2.mp4', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', filter: 'brightness(0.5)', icon: <Waves className="w-5 h-5" /> },
+  twilightLofi: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Twilight Lo-Fi', isLive: true, videoUrl: 'https://files.catbox.moe/e6p8m1.mp4', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
+  sunsetDrift: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Drift', isLive: true, videoUrl: 'https://files.catbox.moe/0ksawe.mp4', filter: 'brightness(0.8)', icon: <Waves className="w-5 h-5" /> },
+  woodlandRetreat: { bg: 'bg-black', accent: 'emerald', text: 'text-emerald-100', name: 'Woodland Retreat', isLive: true, videoUrl: 'https://files.catbox.moe/129ue0.mp4', filter: 'brightness(0.7)', icon: <Mountain className="w-5 h-5" /> },
+  oceanicHorizon: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Oceanic Horizon', isLive: true, videoUrl: 'https://files.catbox.moe/ekvzk3.mp4', filter: 'brightness(0.7)', icon: <Waves className="w-5 h-5" /> },
+  cascadingSerenity: { bg: 'bg-black', accent: 'teal', text: 'text-teal-100', name: 'Cascading Serenity', isLive: true, videoUrl: 'https://files.catbox.moe/gzjamw.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', zoom: true, isGif: true, icon: <Waves className="w-5 h-5" /> },
+  snowboundSilence: { bg: 'bg-black', accent: 'slate', text: 'text-slate-100', name: 'Snowbound Silence', isLive: true, videoUrl: 'https://files.catbox.moe/u4ujnb.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  urbanEchoes: { bg: 'bg-black', accent: 'zinc', text: 'text-zinc-100', name: 'Urban Echoes', isLive: true, videoUrl: 'https://files.catbox.moe/ipn54d.gif', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  sunsetVigil: { bg: 'bg-black', accent: 'orange', text: 'text-orange-100', name: 'Sunset Vigil', isLive: true, videoUrl: 'https://files.catbox.moe/fglfav.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.7)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  neonPulse: { bg: 'bg-black', accent: 'purple', text: 'text-purple-100', name: 'Neon Pulse', isLive: true, videoUrl: 'https://files.catbox.moe/vfys71.gif', audioUrl: 'https://files.catbox.moe/bk9aev.mp3', filter: 'brightness(0.6)', isGif: true, icon: <Waves className="w-5 h-5" /> },
+  celestialWhispers: { bg: 'bg-black', accent: 'indigo', text: 'text-indigo-100', name: 'Celestial Whispers', isLive: true, videoUrl: 'https://files.catbox.moe/amr3r5.gif', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', isGif: true, noOverlay: true, icon: <Sparkles className="w-5 h-5" /> },
+  galacticBloom: { bg: 'bg-black', accent: 'fuchsia', text: 'text-fuchsia-100', name: 'Galactic Bloom', isLive: true, videoUrl: 'https://files.catbox.moe/l14uyj.gif', audioUrl: 'https://files.catbox.moe/zu8uiw.mp3', filter: 'brightness(0.85)', isGif: true, icon: <Orbit className="w-5 h-5" /> },
+  lunarTide: { bg: 'bg-black', accent: 'blue', text: 'text-blue-100', name: 'Lunar Tide', isLive: true, videoUrl: 'https://files.catbox.moe/klkmjo.gif', zoom: true, isGif: true, noOverlay: true, icon: <Waves className="w-5 h-5" /> },
+  nebulaVortex: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-100', name: 'Nebula Vortex', isLive: true, videoUrl: 'https://files.catbox.moe/a1dso1.mp4', playbackRate: 0.5, icon: <Orbit className="w-5 h-5" /> },
 
   // New Premium Themes
-  stardust: { bg: 'bg-[#020205]', accent: 'slate', text: 'text-slate-100', name: 'Stardust', isPro: false, icon: <Sparkles className="w-5 h-5" /> },
-  retroGrid: { bg: 'bg-[#050505]', accent: 'emerald', text: 'text-emerald-400', name: 'Retro Grid', isPro: true, icon: <Grid3X3 className="w-5 h-5" /> },
-  auroraBorealis: { bg: 'bg-[#010409]', accent: 'teal', text: 'text-teal-100', name: 'Aurora Borealis', isPro: true, icon: <Waves className="w-5 h-5" /> },
-  sereneLandscape: { bg: 'bg-[#0a0a0a]', accent: 'stone', text: 'text-stone-100', name: 'Serene Landscape', isPro: true, icon: <Mountain className="w-5 h-5" /> },
-  obsidian: { bg: 'bg-[#000000]', accent: 'zinc', text: 'text-zinc-400', name: 'Obsidian', isPro: false, icon: <Diamond className="w-5 h-5" /> },
-  nebula: { bg: 'bg-[#05000a]', accent: 'pink', text: 'text-pink-100', name: 'Nebula', isPro: true, icon: <Orbit className="w-5 h-5" /> },
+  stardust: { bg: 'bg-[#020205]', accent: 'slate', text: 'text-slate-100', name: 'Stardust', icon: <Sparkles className="w-5 h-5" /> },
+  retroGrid: { bg: 'bg-[#050505]', accent: 'emerald', text: 'text-emerald-400', name: 'Retro Grid', icon: <Grid3X3 className="w-5 h-5" /> },
+  auroraBorealis: { bg: 'bg-[#010409]', accent: 'teal', text: 'text-teal-100', name: 'Aurora Borealis', icon: <Waves className="w-5 h-5" /> },
+  sereneLandscape: { bg: 'bg-[#0a0a0a]', accent: 'stone', text: 'text-stone-100', name: 'Serene Landscape', icon: <Mountain className="w-5 h-5" /> },
+  obsidian: { bg: 'bg-[#000000]', accent: 'zinc', text: 'text-zinc-400', name: 'Obsidian', icon: <Diamond className="w-5 h-5" /> },
+  nebula: { bg: 'bg-[#05000a]', accent: 'pink', text: 'text-pink-100', name: 'Nebula', icon: <Orbit className="w-5 h-5" /> },
   
   // Refined Original Themes (Darker)
-  liquidGlass: { bg: 'bg-[#000000]', accent: 'white', text: 'text-white', name: 'Liquid Glass', isPro: true, icon: <Layers className="w-5 h-5" /> },
-  cinematicNoir: { bg: 'bg-[#030303]', accent: 'zinc', text: 'text-zinc-400', name: 'Cinematic Noir', isPro: false, icon: <Sparkles className="w-5 h-5" /> },
-  auroraGlow: { bg: 'bg-[#010208]', accent: 'emerald', text: 'text-emerald-200', name: 'Aurora Glow', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
-  minimalLuxury: { bg: 'bg-[#050505]', accent: 'stone', text: 'text-stone-300', name: 'Minimal Luxury', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
-  futuristicEditorial: { bg: 'bg-[#000000]', accent: 'orange', text: 'text-orange-200', name: 'Futuristic Editorial', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
-  softHolographic: { bg: 'bg-[#050414]', accent: 'fuchsia', text: 'text-fuchsia-200', name: 'Soft Holographic', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
-  deepSpace: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-300', name: 'Deep Space', isPro: true, icon: <Sparkles className="w-5 h-5" /> },
+  liquidGlass: { bg: 'bg-[#000000]', accent: 'white', text: 'text-white', name: 'Liquid Glass', icon: <Layers className="w-5 h-5" /> },
+  cinematicNoir: { bg: 'bg-[#030303]', accent: 'zinc', text: 'text-zinc-400', name: 'Cinematic Noir', icon: <Sparkles className="w-5 h-5" /> },
+  auroraGlow: { bg: 'bg-[#010208]', accent: 'emerald', text: 'text-emerald-200', name: 'Aurora Glow', icon: <Sparkles className="w-5 h-5" /> },
+  minimalLuxury: { bg: 'bg-[#050505]', accent: 'stone', text: 'text-stone-300', name: 'Minimal Luxury', icon: <Sparkles className="w-5 h-5" /> },
+  futuristicEditorial: { bg: 'bg-[#000000]', accent: 'orange', text: 'text-orange-200', name: 'Futuristic Editorial', icon: <Sparkles className="w-5 h-5" /> },
+  softHolographic: { bg: 'bg-[#050414]', accent: 'fuchsia', text: 'text-fuchsia-200', name: 'Soft Holographic', icon: <Sparkles className="w-5 h-5" /> },
+  deepSpace: { bg: 'bg-[#000000]', accent: 'indigo', text: 'text-indigo-300', name: 'Deep Space', icon: <Sparkles className="w-5 h-5" /> },
   
   // Legacy Themes
-  void: { bg: 'bg-[#030008]', accent: 'purple', text: 'text-purple-300', name: 'The Void', isPro: false, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
-  midnight: { bg: 'bg-[#00040a]', accent: 'blue', text: 'text-blue-300', name: 'Midnight', isPro: false, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
-  crimson: { bg: 'bg-[#0a0202]', accent: 'red', text: 'text-red-300', name: 'Crimson', isPro: true, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
-  ethereal: { bg: 'bg-[#010208]', accent: 'slate', text: 'text-slate-300', name: 'Ethereal', isPro: true, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
-  abyss: { bg: 'bg-[#020202]', accent: 'zinc', text: 'text-zinc-500', name: 'Abyss', isPro: true, isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  void: { bg: 'bg-[#030008]', accent: 'purple', text: 'text-purple-300', name: 'The Void', isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  midnight: { bg: 'bg-[#00040a]', accent: 'blue', text: 'text-blue-300', name: 'Midnight', isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  crimson: { bg: 'bg-[#0a0202]', accent: 'red', text: 'text-red-300', name: 'Crimson', isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  ethereal: { bg: 'bg-[#010208]', accent: 'slate', text: 'text-slate-300', name: 'Ethereal', isOld: true, icon: <Sparkles className="w-5 h-5" /> },
+  abyss: { bg: 'bg-[#020202]', accent: 'zinc', text: 'text-zinc-500', name: 'Abyss', isOld: true, icon: <Sparkles className="w-5 h-5" /> },
 };
 
 interface ReleaseEntry {
@@ -868,11 +868,6 @@ const ThemePreviewCard = ({ theme, reduceMotion = false }: { theme: Theme, reduc
               <h4 className="text-2xl font-light tracking-tight text-white serif">
                 {config.name}
               </h4>
-              {config.isPro && (
-                <div className="px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                  <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                </div>
-              )}
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold">
               Atmosphere Preview
@@ -1153,6 +1148,7 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false, isM
   );
 };
 
+/*
 const PayPalSubscriptionButton = ({ onApprove }: { onApprove: (subscriptionID: string) => void }) => {
   const containerId = "paypal-button-container-P-6PH880156W850713XNG3VZCQ";
   const [sdkLoaded, setSdkLoaded] = useState(false);
@@ -1237,6 +1233,7 @@ const PayPalSubscriptionButton = ({ onApprove }: { onApprove: (subscriptionID: s
 
   return <div id={containerId} className="w-full" />;
 };
+*/
 
 const containerVariants: any = {
   idle: { y: [0, -8, 0], transition: { duration: 6, repeat: Infinity, ease: "easeInOut" } }
@@ -1429,8 +1426,22 @@ const THEME_ANIMATION_MAP: Record<string, string> = {
 };
 
 export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolean, onShowAdmin?: () => void }) {
-  const [isMusicMuted, setIsMusicMuted] = useState(false);
-  const [isAllMuted, setIsAllMuted] = useState(false);
+  const [isMusicMuted, setIsMusicMuted] = useState(() => {
+    const saved = localStorage.getItem('isMusicMuted');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+  const [isAllMuted, setIsAllMuted] = useState(() => {
+    const saved = localStorage.getItem('isAllMuted');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('isMusicMuted', JSON.stringify(isMusicMuted));
+  }, [isMusicMuted]);
+
+  useEffect(() => {
+    localStorage.setItem('isAllMuted', JSON.stringify(isAllMuted));
+  }, [isAllMuted]);
   const muteTimerRef = useRef<number | null>(null);
   const { t, language, setLanguage } = useLanguage();
   const [text, setText] = useState('');
@@ -1454,7 +1465,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [showStats, setShowStats] = useState(false);
-  const [showProModal, setShowProModal] = useState(false);
+  // const [showProModal, setShowProModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [isEcoMode, setIsEcoMode] = useState(false);
@@ -1706,6 +1717,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     }
   };
 
+  /*
   const handleProApproval = useCallback(async (subId: string) => {
     if (!user) return;
     console.log("Subscription approved:", subId);
@@ -1719,6 +1731,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       console.error("Failed to upgrade tier", e);
     }
   }, [user]);
+  */
 
   const getLocalResetPoint = useCallback(() => {
     const now = new Date();
@@ -1837,31 +1850,31 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     
     // Sentiment/Intensity detection
     const intensity = Math.min(1.5, 0.5 + (text.length / 500));
-    const angryWords = ['hate', 'angry', 'rage', 'kill', 'die', 'furious', 'mad', 'scream'];
-    const sadWords = ['sad', 'lonely', 'cry', 'pain', 'hurt', 'lost', 'empty', 'alone'];
-    const isAngry = angryWords.some(w => text.toLowerCase().includes(w));
-    const isSad = sadWords.some(w => text.toLowerCase().includes(w));
+    const angryWords = ['hate', 'angry', 'rage', 'kill', 'die', 'furious', 'mad', 'scream', 'annoyed', 'frustrated'];
+    const sadWords = ['sad', 'lonely', 'cry', 'pain', 'hurt', 'lost', 'empty', 'alone', 'depressed', 'grief', 'tears'];
+    const happyWords = ['happy', 'joy', 'love', 'excited', 'great', 'good', 'peace', 'calm', 'thank', 'grateful', 'hope'];
+    
+    const lowerText = text.toLowerCase();
+    const isAngry = angryWords.some(w => lowerText.includes(w));
+    const isSad = sadWords.some(w => lowerText.includes(w));
+    const isHappy = happyWords.some(w => lowerText.includes(w));
     
     let tone: 'angry' | 'sad' | 'neutral' = 'neutral';
-    if (isAngry) tone = 'angry';
-    else if (isSad) tone = 'sad';
+    if (isAngry) {
+      tone = 'angry';
+    } else if (isSad) {
+      tone = 'sad';
+    }
 
     triggerHaptic(ritualMode === 'heavy' ? [100, 200, 300, 400] : [50, 100, 150, 200, 300]);
     playCosmicHum(isAllMuted);
 
-    const proProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => ANIMATIONS_CONFIG[key].isPro);
-    const freeProfiles = Object.keys(ANIMATIONS_CONFIG).filter(key => !ANIMATIONS_CONFIG[key].isPro);
+    const allProfiles = Object.keys(ANIMATIONS_CONFIG);
 
     let selectedProfile: string;
     
     if (userData.selectedAnimation && userData.selectedAnimation !== 'random') {
-      const isProAnim = ANIMATIONS_CONFIG[userData.selectedAnimation]?.isPro;
-      if (isProAnim && userData.tier !== 'pro') {
-        const available = freeProfiles;
-        selectedProfile = available[Math.floor(Math.random() * available.length)];
-      } else {
-        selectedProfile = userData.selectedAnimation;
-      }
+      selectedProfile = userData.selectedAnimation;
     } else {
       // Logic for picking animation based on tone
       if (ritualMode === 'oracle') selectedProfile = 'singularity';
@@ -1870,8 +1883,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
       else if (THEMES[userData.theme]?.isLive && THEME_ANIMATION_MAP[userData.theme]) {
         selectedProfile = THEME_ANIMATION_MAP[userData.theme];
       } else {
-        const available = userData.tier === 'pro' ? [...proProfiles, ...freeProfiles] : freeProfiles;
-        selectedProfile = available[Math.floor(Math.random() * available.length)];
+        selectedProfile = allProfiles[Math.floor(Math.random() * allProfiles.length)];
       }
     }
     
@@ -2655,11 +2667,13 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                 {isAllMuted || isMusicMuted ? <VolumeX className="w-3 h-3 md:w-4 md:h-4" /> : <Volume2 className="w-3 h-3 md:w-4 md:h-4" />}
                 <span className="hidden sm:inline">{isAllMuted ? "Muted All" : isMusicMuted ? "Muted Music" : "Mute"}</span>
               </button>
+              {/*
               {userData.tier === 'free' && (
                 <button onClick={() => setShowProModal(true)} className="liquid-glass-strong px-2 py-1.5 md:px-4 md:py-2 rounded-full hover:scale-105 transition-transform flex items-center gap-1.5 text-amber-300 shrink-0">
                   <Sparkles className="w-3 h-3" /> <span className="hidden sm:inline">Upgrade</span>
                 </button>
               )}
+              */}
             </div>
 
             {/* Right: Socials */}
@@ -2779,6 +2793,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                     </section>
 
                     <section>
+                      {/*
                       <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6 flex items-center gap-2">
                         <User className="w-3 h-3" />
                         Account Status
@@ -2819,6 +2834,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                           )}
                         </div>
                       </div>
+                      */}
                     </section>
                   </div>
 
@@ -2952,26 +2968,19 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                               return !theme.isLive && !theme.isOld;
                             }).map((t) => {
                               const theme = THEMES[t];
-                              const isLocked = theme.isPro && userData.tier === 'free';
                               return (
                                 <button
                                   key={t}
                                   onMouseEnter={() => setHoveredTheme(t as Theme)}
                                   onMouseLeave={() => setHoveredTheme(null)}
                                   onClick={() => {
-                                    if (isLocked) {
-                                      setShowStats(false);
-                                      setShowProModal(true);
-                                    } else {
-                                      saveUserData({ theme: t });
-                                    }
+                                    saveUserData({ theme: t });
                                   }}
                                   className={cn(
                                     "group relative p-4 md:p-6 rounded-xl md:rounded-2xl border transition-all duration-500 overflow-hidden flex flex-col items-center justify-center gap-2 md:gap-3",
                                     userData.theme === t 
                                       ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
-                                      : "border-white/5 hover:border-white/20",
-                                    isLocked && "opacity-50"
+                                      : "border-white/5 hover:border-white/20"
                                   )}
                                 >
                                   {/* Real Background Preview - Optimized for list */}
@@ -2992,7 +3001,6 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                                     )}>
                                       {theme.name}
                                     </span>
-                                    {isLocked && <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 text-white/30" />}
                                   </div>
                                   
                                   {userData.theme === t && (
@@ -3012,26 +3020,19 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
                             {Object.keys(ANIMATIONS_CONFIG).map((animId) => {
                               const anim = ANIMATIONS_CONFIG[animId];
-                              const isLocked = anim.isPro && userData.tier === 'free' && !isAdmin;
                               return (
                                 <button
                                   key={animId}
                                   onMouseEnter={() => setHoveredAnim(animId)}
                                   onMouseLeave={() => setHoveredAnim(null)}
                                   onClick={() => {
-                                    if (isLocked) {
-                                      setShowStats(false);
-                                      setShowProModal(true);
-                                    } else {
-                                      saveUserData({ selectedAnimation: userData.selectedAnimation === animId ? 'random' : animId });
-                                    }
+                                    saveUserData({ selectedAnimation: userData.selectedAnimation === animId ? 'random' : animId });
                                   }}
                                   className={cn(
                                     "relative h-20 md:h-24 rounded-xl border text-[8px] md:text-[9px] uppercase tracking-widest font-bold transition-all overflow-hidden group",
                                     userData.selectedAnimation === animId
                                       ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
-                                      : "bg-white/[0.02] border-white/5 hover:border-white/20",
-                                    isLocked && "opacity-50"
+                                      : "bg-white/[0.02] border-white/5 hover:border-white/20"
                                   )}
                                 >
                                   {/* Live Preview Background */}
@@ -3068,7 +3069,6 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
                                           </span>
                                         )}
                                       </div>
-                                      {isLocked && <Lock className="w-2.5 h-2.5 text-white/30" />}
                                     </div>
                                   </div>
                                 </button>
@@ -3144,6 +3144,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
         )}
       </AnimatePresence>
 
+      {/*
       <AnimatePresence>
         {showProModal && (
           <motion.div
@@ -3234,6 +3235,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
           </motion.div>
         )}
       </AnimatePresence>
+      */}
       <div className="fixed bottom-2 left-0 right-0 flex justify-center pointer-events-none z-[60]">
         <span className="text-[8px] md:text-[10px] font-mono text-white/20 tracking-[0.2em] uppercase">
           BETA • BUGS MAY OCCUR.
