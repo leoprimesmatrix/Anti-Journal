@@ -2519,7 +2519,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 1.05 }}
               transition={{ duration: 1, ease: "easeOut" }}
-              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-50 bg-black/40"
+              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-50"
             >
               <div className="relative flex items-center justify-center mb-16">
                 {/* Countdown */}
