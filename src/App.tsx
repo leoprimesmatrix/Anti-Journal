@@ -86,7 +86,7 @@ export default function App() {
             const newProfile: UserProfile = {
               email: currentUser.email || '',
               tier: 'free',
-              approved: false,
+              approved: true, // Auto-approve for public launch
               isBanned: false,
             };
             
@@ -172,39 +172,6 @@ export default function App() {
             <LogOut className="w-4 h-4" />
             Sign Out
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Early Access Gate
-  if (user && !profile?.approved && !isAdmin) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <div className="max-w-md w-full liquid-glass p-12 rounded-[40px] border border-white/10 text-center space-y-8">
-          <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto">
-            <Clock className="w-10 h-10 text-white/60" />
-          </div>
-          <div className="space-y-4">
-            <h1 className="text-4xl font-display tracking-tight">Awaiting Entry</h1>
-            <p className="text-white/40 leading-relaxed">
-              Your request for early access is being processed. The void opens only when the balance is right. You will be notified once approved.
-            </p>
-          </div>
-          <div className="pt-4 space-y-4">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-white/30 italic">
-              "Patience is the first step into the silence."
-            </div>
-            <p className="text-[10px] text-white/20 uppercase tracking-widest">Your request is active and securely stored in the void.</p>
-            <button 
-              onClick={handleLogout}
-              className="w-full py-4 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-            <p className="text-[9px] text-white/10 uppercase tracking-[0.2em]">Signing out will not cancel your request</p>
-          </div>
         </div>
       </div>
     );
