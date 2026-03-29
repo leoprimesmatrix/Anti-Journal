@@ -43,11 +43,7 @@ service cloud.firestore {
     }
 
     function isApproved() {
-      return isAuthenticated() && 
-             (isAdmin() || (
-               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('approved', false) == true
-             ));
+      return isAuthenticated(); // Early access gate removed
     }
 
     function isNotBanned() {
@@ -117,7 +113,7 @@ service cloud.firestore {
                       request.resource.data.keys().hasAll(['tier', 'totalReleases', 'theme', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned']) &&
                       request.resource.data.keys().hasOnly(['tier', 'totalReleases', 'theme', 'email', 'updatedAt', 'paypalSubscriptionId', 'role', 'selectedAnimation', 'dailyReleases', 'lastDailyUpdate', 'monthlyReleases', 'lastMonthlyUpdate', 'approved', 'isBanned', 'isEcoMode', 'lastSeen', 'disableBreathing', 'totalElapsedTime']) &&
                       request.resource.data.tier == 'free' &&
-                      request.resource.data.approved == false &&
+                      (request.resource.data.approved == true || request.resource.data.approved == false) &&
                       request.resource.data.isBanned == false
                     ));
       
