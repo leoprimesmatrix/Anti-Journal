@@ -1876,12 +1876,10 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
     if (userData.selectedAnimation && userData.selectedAnimation !== 'random') {
       selectedProfile = userData.selectedAnimation;
     } else {
-      // Logic for picking animation based on tone
-      if (ritualMode === 'oracle') selectedProfile = 'singularity';
-      else if (tone === 'angry') selectedProfile = 'incinerate';
-      else if (tone === 'sad') selectedProfile = 'nebula';
-      else if (THEMES[userData.theme]?.isLive && THEME_ANIMATION_MAP[userData.theme]) {
-        selectedProfile = THEME_ANIMATION_MAP[userData.theme];
+      // Pick a random animation that is different from recently used ones
+      const availableProfiles = allProfiles.filter(p => !recentAnimsRef.current.includes(p));
+      if (availableProfiles.length > 0) {
+        selectedProfile = availableProfiles[Math.floor(Math.random() * availableProfiles.length)];
       } else {
         selectedProfile = allProfiles[Math.floor(Math.random() * allProfiles.length)];
       }
