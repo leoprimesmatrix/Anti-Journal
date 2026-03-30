@@ -1465,6 +1465,7 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [showStats, setShowStats] = useState(false);
+  const [showThemeHint, setShowThemeHint] = useState(false);
   // const [showProModal, setShowProModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -1538,6 +1539,30 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
   const [themeTab, setThemeTab] = useState<'atmospheres' | 'live' | 'legacy'>('atmospheres');
   const [hoveredTheme, setHoveredTheme] = useState<Theme | null>(null);
   
+  useEffect(() => {
+    if (userData && userData.totalReleases < 5) {
+      const hasSeen = localStorage.getItem('hasSeenThemeHint');
+      if (!hasSeen) {
+        if (Math.random() > 0.5 || userData.totalReleases === 1) {
+          const timer = setTimeout(() => {
+            setShowThemeHint(true);
+          }, 4000);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [userData?.totalReleases]);
+
+  const handleInsightsClick = () => {
+    setShowStats(true);
+    if (showThemeHint) {
+      setShowThemeHint(false);
+      localStorage.setItem('hasSeenThemeHint', 'true');
+    } else {
+      localStorage.setItem('hasSeenThemeHint', 'true');
+    }
+  };
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recentAnimsRef = useRef<string[]>([]);
 
@@ -2289,12 +2314,29 @@ export default function AntiJournal({ isAdmin, onShowAdmin }: { isAdmin?: boolea
             
             {user && (
               <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 pointer-events-auto shrink-0">
-                <button 
-                  onClick={() => setShowStats(true)} 
-                  className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2"
-                >
-                  <Activity className="w-4 h-4 md:w-3 md:h-3"/> <span className="hidden md:inline">Insights</span>
-                </button>
+                <div className="relative">
+                  <button 
+                    onClick={handleInsightsClick} 
+                    className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2"
+                  >
+                    <Activity className="w-4 h-4 md:w-3 md:h-3"/> <span className="hidden md:inline">Insights</span>
+                  </button>
+                  <AnimatePresence>
+                    {showThemeHint && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                        className="absolute top-full right-0 mt-3 w-48 p-3 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl z-50 pointer-events-none"
+                      >
+                        <div className="absolute -top-2 right-6 w-4 h-4 bg-white/10 border-t border-l border-white/20 transform rotate-45 backdrop-blur-xl" />
+                        <p className="text-[10px] uppercase tracking-widest text-white font-medium text-center relative z-10">
+                          Change your theme here!
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
                 <button 
                   onClick={() => setIsZenMode(true)}
                   className="liquid-glass p-2 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2"

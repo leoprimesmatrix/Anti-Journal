@@ -98,7 +98,7 @@ export default function App() {
                 lastDailyUpdate: Date.now(),
                 monthlyReleases: 0,
                 lastMonthlyUpdate: Date.now(),
-                theme: 'void',
+                theme: 'felineVigil',
                 updatedAt: serverTimestamp(),
               });
               setProfile(newProfile);
