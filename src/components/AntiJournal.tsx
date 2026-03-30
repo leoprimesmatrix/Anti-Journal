@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { AtmosphereParticles } from './AtmosphereParticles';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { ArrowUp, Lock, Sparkles, History, Palette, Activity, X, CheckCircle2, Zap, LogOut, TrendingUp, Twitter, Github, Mountain, Diamond, Orbit, Grid3X3, Waves, Layers, User, Eye, Shield, Volume2, VolumeX } from 'lucide-react';
@@ -1068,6 +1069,7 @@ const AmbientBackground = ({ theme, reduceMotion = false, isEcoMode = false, isM
           {!THEMES[theme].noOverlay && (
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
           )}
+          <AtmosphereParticles theme={theme} />
         </div>
       )}
 
